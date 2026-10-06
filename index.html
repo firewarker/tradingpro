@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.3.0</title>
+<title>Indice Gol 0.3.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -236,7 +236,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.3.0';
+var VERSIONE = '0.3.1';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -1343,6 +1343,60 @@ async function mostraLive() {
   box.innerHTML = h;
 }
 
+// Nazioni ("categorie") di SofaScore confermate dalle sue risposte: Italia, Inghilterra, Spagna, Germania, Francia, Europa, Mondo, Olanda.
+var CATEGORIE_NOTE = [31, 1, 32, 30, 7, 1465, 1468, 35];
+// Elenco delle partite di un giorno. SofaScore ha piu' di un indirizzo per questo e li cambia: li provo in ordine.
+//  1) elenco unico del giorno;  2) elenco delle nazioni di quel giorno, poi le partite nazione per nazione;
+//  3) se manca anche l'elenco delle nazioni, le otto nazioni principali.
+async function partiteDelGiorno(data, maxNazioni, avanza) {
+  var info = S.giornoInfo = { data: data, metodo: null, tentativi: [] };
+  var ricordo = null;
+  try { ricordo = localStorage.getItem('ig-metodo-giorno'); } catch (e) {}
+  function nota(p, s) { info.tentativi.push(p.replace('/api/v1/', '') + ' -> ' + s); }
+  function ricorda(m) { info.metodo = m; try { localStorage.setItem('ig-metodo-giorno', m); } catch (e) {} }
+  if (ricordo !== 'nazioni') {
+    var p1 = '/api/v1/sport/football/scheduled-events/' + data, r1 = await chiedi(p1);
+    nota(p1, r1.s);
+    if (r1.s === 200 && r1.j && Array.isArray(r1.j.events)) { ricorda('unico'); return { s: 200, events: r1.j.events }; }
+    if (r1.s !== 404) return { s: r1.s };
+  }
+  var scarto = -new Date().getTimezoneOffset() * 60, nazioni = [];
+  var p2 = '/api/v1/sport/football/' + data + '/' + scarto + '/categories', r2 = await chiedi(p2);
+  nota(p2, r2.s);
+  if (r2.s === 200 && r2.j && Array.isArray(r2.j.categories)) {
+    nazioni = r2.j.categories.map(function (c) {
+      return { id: c && c.category && c.category.id, peso: (num(c && c.totalEventPlayerStatistics) || 0) * 1000 + (num(c && c.totalEvents) || 0) };
+    }).filter(function (c) { return c.id !== undefined && c.id !== null; });
+    nazioni.sort(function (a, b) { return b.peso - a.peso; });
+    nazioni = nazioni.map(function (c) { return c.id; });
+  } else if (r2.s !== 404 && r2.s !== 200) {
+    return { s: r2.s };
+  }
+  if (!nazioni.length) nazioni = CATEGORIE_NOTE.slice();
+  nazioni = nazioni.slice(0, maxNazioni);
+  var visti = {}, out = [], buone = 0, errore = 404;
+  for (var i = 0; i < nazioni.length; i++) {
+    if (S.raccolta && S.raccolta.ferma) break;
+    if (avanza) avanza(i + 1, nazioni.length);
+    var p3 = '/api/v1/category/' + nazioni[i] + '/scheduled-events/' + data, r3 = await chiedi(p3);
+    nota(p3, r3.s);
+    if (r3.s === 200 && r3.j && Array.isArray(r3.j.events)) {
+      buone++;
+      r3.j.events.forEach(function (e) { if (e && e.id && !visti[e.id]) { visti[e.id] = true; out.push(e); } });
+    } else if (r3.s !== 404) {
+      errore = r3.s;
+      if (r3.s === 403 || r3.s === 429 || r3.s === 0) break;
+    }
+  }
+  if (!buone) return { s: errore };
+  ricorda('nazioni');
+  return { s: 200, events: out };
+}
+function erroreGiorno(s) {
+  if (s === 404) return 'SofaScore non risponde a nessuno degli indirizzi che conosco per l\'elenco del giorno (errore 404). Intanto puoi incollare l\'indirizzo di una partita nel campo in alto. Premi «Copia la diagnostica» e mandamela: lo sistemo.';
+  return 'Non sono riuscito a leggere le partite di quel giorno (' + (s === 0 ? 'nessuna risposta' : 'errore ' + s) + ').';
+}
+
 async function mostraOggi() {
   if (!S.ponteOk) {
     avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
@@ -1354,12 +1408,14 @@ async function mostraOggi() {
   var giorno = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   box.hidden = false;
   box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo le partite di oggi…</p>';
-  var r = await chiedi('/api/v1/sport/football/scheduled-events/' + giorno);
-  if (r.s !== 200 || !r.j || !Array.isArray(r.j.events)) {
-    box.innerHTML = '<p class="tenue" style="padding:10px 0">Non sono riuscito a leggere le partite di oggi (' + (r.s === 0 ? 'nessuna risposta' : 'errore ' + esc(r.s)) + ').</p>';
+  var r = await partiteDelGiorno(giorno, 12, function (i, n) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">SofaScore dà le partite nazione per nazione: leggo la ' + i + ' di ' + n + '…</p>';
+  });
+  if (r.s !== 200) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">' + esc(erroreGiorno(r.s)) + '</p>';
     return;
   }
-  var evs = r.j.events.filter(function (e) { return e && e.id && e.status && e.status.type === 'notstarted'; });
+  var evs = r.events.filter(function (e) { return e && e.id && e.status && e.status.type === 'notstarted'; });
   function peso(e) {
     var u = e.tournament && e.tournament.uniqueTournament;
     return (e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
@@ -1690,11 +1746,11 @@ async function raccogli() {
   S.spento = false;
   el('btnRaccogli').disabled = true; el('btnFerma').hidden = false;
   raccoltaRiga('Leggo le partite del ' + data + '…');
-  var r = await chiedi('/api/v1/sport/football/scheduled-events/' + data);
-  if (r.s !== 200 || !r.j || !Array.isArray(r.j.events)) {
-    fineRaccolta('Non sono riuscito a leggere le partite di quel giorno (' + (r.s === 0 ? 'nessuna risposta' : 'errore ' + r.s) + ').');
-    return;
-  }
+  var r = await partiteDelGiorno(data, 15, function (i, n) {
+    raccoltaRiga('SofaScore dà le partite nazione per nazione: leggo la ' + i + ' di ' + n + '…');
+  });
+  if (r.s !== 200) { fineRaccolta(erroreGiorno(r.s)); return; }
+  if (R.ferma) { fineRaccolta('Raccolta fermata.'); return; }
   // Gia' raccolte = solo le partite salvate come finite: una partita seguita a meta' va completata.
   var tutte = await dbRichiesta('partite', 'readonly', function (st) { return st.getAll(); });
   var gia = {}, salt = await chiaviDi('saltate');
@@ -1703,7 +1759,7 @@ async function raccogli() {
     var u = e.tournament && e.tournament.uniqueTournament;
     return (e.hasXg ? 2e9 : 0) + (e.hasEventPlayerStatistics ? 1e9 : 0) + (num(u && u.userCount) || 0);
   }
-  var cand = r.j.events.filter(function (e) {
+  var cand = r.events.filter(function (e) {
     return e && e.id && e.status && e.status.type === 'finished' && !gia[String(e.id)] && !salt[String(e.id)];
   });
   cand.sort(function (a, b) { return peso(b) - peso(a); });
@@ -1758,6 +1814,7 @@ function diagnostica() {
   var P = S.partita, out = { versione: VERSIONE, ora: new Date().toISOString(), ponte: S.ponteOk, opener: !!window.opener, richieste: S.registro };
   if (S.verifica) out.storico = { partite: S.verifica.partite, minuti: S.verifica.minuti, base: S.verifica.base, fasce: S.verifica.fasce, xg: S.verifica.xg };
   out.raccolta = el('raccoltaRiga').textContent || null;
+  out.elencoGiorno = S.giornoInfo || null;
   if (P) {
     var e = (P.dati.event && P.dati.event.event) || {};
     var g = (P.dati.graph && P.dati.graph.graphPoints) || [];
