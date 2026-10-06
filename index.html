@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.2.0</title>
+<title>Indice Gol 0.3.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -48,6 +48,15 @@ input[type=date], select{
   font:500 16px/1 var(--testo); color:var(--gesso); background:rgba(0,0,0,.22); border:1.5px solid var(--linea);
   padding:10px 12px; border-radius:3px; color-scheme:dark;
 }
+.scelta{padding:14px 16px; border-left:6px solid var(--gesso); background:rgba(0,0,0,.25); margin-bottom:16px}
+.scelta.ok{border-left-color:#7be495} .scelta.medio{border-left-color:#f0b429} .scelta.no{border-left-color:var(--caldo)}
+.scelta .titolo{font-family:var(--stretto); font-weight:600; font-size:28px; line-height:1.12}
+.scelta .sotto{margin-top:6px; font-size:17px}
+.scorri{overflow-x:auto}
+.scorri table{min-width:720px}
+td small{display:block; color:var(--gesso-tenue); font-size:13px}
+table input.q[type=text]{font:500 16px/1 var(--testo); max-width:none; color:var(--gesso); background:rgba(0,0,0,.3); border:1.5px solid var(--linea); border-radius:3px; padding:7px 6px; width:74px; text-align:center}
+.su{color:#7be495; font-weight:600} .giu{color:var(--gesso-tenue)}
 .storia{margin-top:10px; padding-top:10px; border-top:1px solid var(--linea); font-size:16px; max-width:62ch}
 table.larga{max-width:none}
 input[type=text]{
@@ -132,6 +141,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
       <input type="text" id="inId" inputmode="numeric" placeholder="Id della partita, oppure l'indirizzo SofaScore" aria-label="Id della partita">
       <button type="button" class="pieno" id="btnCarica">Carica partita</button>
       <button type="button" id="btnLive">Mostra partite in corso</button>
+      <button type="button" id="btnOggi">Mostra partite di oggi da giocare</button>
     </div>
     <div id="avviso" class="avviso" hidden></div>
     <div id="elenco" class="elenco" hidden></div>
@@ -141,6 +151,11 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
     <section class="blocco">
       <div id="tabellone"></div>
     </section>
+    <section class="blocco" id="secPre" hidden>
+      <h2>Pronostico pre-partita</h2>
+      <div id="pre"></div>
+    </section>
+    <div id="secLive">
     <section class="blocco">
       <h2>Indice Gol adesso</h2>
       <div id="indiceOra"></div>
@@ -171,6 +186,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
       <h2>Totali della partita</h2>
       <div id="totali"></div>
     </section>
+    </div>
   </div>
 
   <section class="blocco">
@@ -197,6 +213,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
   <section class="blocco">
     <h2>Storico e controlli</h2>
     <p id="storicoRiga" class="tenue">Storico: nessuna partita salvata.</p>
+    <p id="pronosticiRiga" class="tenue" hidden></p>
     <div class="riga">
       <button type="button" id="btnEsporta">Esporta lo storico su file</button>
       <button type="button" id="btnDiag">Copia la diagnostica</button>
@@ -209,6 +226,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
       <p><b>Spinta.</b> Media del momentum a favore di ciascuna squadra, dove ogni minuto vale la metà dopo 6 minuti. In più un piccolo premio se la spinta degli ultimi 5 minuti supera quella dei 10 precedenti.</p>
       <p><b>Contesto.</b> Minuto di gioco, squadra sotto o sopra di un gol, espulsioni.</p>
       <p><b>Base.</b> 2,7 gol attesi a partita, uguale per tutte: in questa versione mancano ancora le quote.</p>
+      <p><b>Pronostico pre-partita.</b> Dalle ultime 20 partite di ciascuna squadra ricavo quanti gol segna e subisce, dando più peso alle più recenti e alla stessa competizione. Da lì i gol attesi e le probabilità di 1, X, 2, Over 2.5, GG e Over 0.5 primo tempo. Se ci sono le quote, il mercato pesa il 70% e il mio modello il 30%. Propongo di entrare solo se probabilità per quota supera 1,03 e se il mio modello non è lontano dal mercato più di 12 punti.</p>
       <p><b>Storico.</b> Per ogni partita finita ricalcolo l'indice a ogni minuto dal 5' all'80', usando solo i dati fino a quel minuto, e guardo se nei 10 minuti dopo è arrivato un gol.</p>
       <p><b>Limite.</b> I pesi sono ancora provvisori, scelti da me. La tabella dello storico dice quanto valgono davvero: finché non lo conferma, la percentuale non è un segnale per giocare.</p>
     </details>
@@ -218,7 +236,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.2.0';
+var VERSIONE = '0.3.0';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -639,6 +657,215 @@ function snellisciScheda(ev) {
   } };
 }
 
+// ====== PRE-PARTITA ======
+var PRE = {
+  mediaSquadra: 1.35,     // gol medi di una squadra a partita
+  pseudo: 6,              // partite "medie" aggiunte per non fidarsi troppo di pochi risultati
+  emivitaPartite: 10,     // una partita di 10 turni fa pesa la meta'
+  maxPartite: 20,
+  pesoAltraCoppa: 0.7,    // peso di una partita giocata in un'altra competizione
+  casa: 1.10, trasferta: 0.90,
+  rho: -0.05,             // correzione per i punteggi bassi (0-0, 1-1 piu' frequenti)
+  quotaPrimoTempo: 0.45, pseudoGolPT: 20,
+  pesoMercato: 0.7,       // quanto pesa il mercato rispetto al modello
+  margine: 1.03,          // valore minimo per proporre l'entrata
+  divergenzaMax: 0.12,    // oltre questa distanza dal mercato non mi fido del modello
+  margineBook: 1.05       // margine tipico tolto a una quota scritta a mano senza le altre
+};
+var ESITI = ['1', 'X', '2', 'O25', 'GG', 'O05PT'];
+var BASE_ESITI = { '1': 0.45, 'X': 0.26, '2': 0.29, 'O25': 0.50, 'GG': 0.51, 'O05PT': 0.70 };
+
+function golPartita(e) {
+  var hs = (e && e.homeScore) || {}, as = (e && e.awayScore) || {};
+  var gh = num(hs.normaltime), ga = num(as.normaltime);
+  if (gh === null) gh = num(hs.current);
+  if (ga === null) ga = num(as.current);
+  var h1 = num(hs.period1), a1 = num(as.period1);
+  return { h: gh, a: ga, h1: h1, a1: a1 };
+}
+// Riassunto delle ultime partite di una squadra, prese dalla risposta di SofaScore.
+function campioneSquadra(j, teamId, eventoId, torneoId, prima) {
+  var evs = (j && Array.isArray(j.events)) ? j.events : [], righe = [];
+  evs.forEach(function (e) {
+    if (!e || String(e.id) === String(eventoId)) return;
+    if (!e.status || e.status.type !== 'finished') return;
+    var quando = num(e.startTimestamp) || 0;
+    if (prima !== null && prima !== undefined && quando >= prima) return;
+    var g = golPartita(e);
+    if (g.h === null || g.a === null) return;
+    var inCasa;
+    if (e.homeTeam && String(e.homeTeam.id) === String(teamId)) inCasa = true;
+    else if (e.awayTeam && String(e.awayTeam.id) === String(teamId)) inCasa = false;
+    else return;
+    var ut = e.tournament && e.tournament.uniqueTournament;
+    righe.push({
+      quando: quando, gf: inCasa ? g.h : g.a, gs: inCasa ? g.a : g.h, tot: g.h + g.a,
+      pt: (g.h1 !== null && g.a1 !== null) ? g.h1 + g.a1 : null,
+      stesso: !!(ut && torneoId !== null && torneoId !== undefined && String(ut.id) === String(torneoId))
+    });
+  });
+  righe.sort(function (a, b) { return b.quando - a.quando; });
+  righe = righe.slice(0, PRE.maxPartite);
+  var sw = 0, sgf = 0, sgs = 0, gpt = 0, gtot = 0, stesse = 0;
+  righe.forEach(function (r, k) {
+    var w = Math.pow(0.5, k / PRE.emivitaPartite) * (r.stesso ? 1 : PRE.pesoAltraCoppa);
+    sw += w; sgf += w * r.gf; sgs += w * r.gs;
+    if (r.stesso) stesse++;
+    if (r.pt !== null) { gpt += w * r.pt; gtot += w * r.tot; }
+  });
+  return {
+    n: righe.length, stesse: stesse, peso: sw,
+    gf: (sgf + PRE.pseudo * PRE.mediaSquadra) / (sw + PRE.pseudo),
+    gs: (sgs + PRE.pseudo * PRE.mediaSquadra) / (sw + PRE.pseudo),
+    mediaGf: sw ? sgf / sw : null, mediaGs: sw ? sgs / sw : null, golPT: gpt, golTot: gtot
+  };
+}
+function probDaGolAttesi(lH, lA, quotaPT) {
+  var N = 10, ph = [], pa = [], i, j, fatt = 1;
+  for (i = 0; i <= N; i++) {
+    if (i > 0) fatt *= i;
+    ph.push(Math.exp(-lH) * Math.pow(lH, i) / fatt);
+    pa.push(Math.exp(-lA) * Math.pow(lA, i) / fatt);
+  }
+  var p1 = 0, pX = 0, p2 = 0, o25 = 0, gg = 0, tot = 0, rho = PRE.rho;
+  for (i = 0; i <= N; i++) {
+    for (j = 0; j <= N; j++) {
+      var p = ph[i] * pa[j];
+      if (i === 0 && j === 0) p *= 1 - lH * lA * rho;
+      else if (i === 0 && j === 1) p *= 1 + lH * rho;
+      else if (i === 1 && j === 0) p *= 1 + lA * rho;
+      else if (i === 1 && j === 1) p *= 1 - rho;
+      if (p < 0) p = 0;
+      tot += p;
+      if (i > j) p1 += p; else if (i === j) pX += p; else p2 += p;
+      if (i + j >= 3) o25 += p;
+      if (i > 0 && j > 0) gg += p;
+    }
+  }
+  return { '1': p1 / tot, 'X': pX / tot, '2': p2 / tot, 'O25': o25 / tot, 'GG': gg / tot, 'O05PT': 1 - Math.exp(-quotaPT * (lH + lA)) };
+}
+function modelloPre(cH, cA) {
+  var mu = PRE.mediaSquadra;
+  var lH = clamp(cH.gf * cA.gs / mu * PRE.casa, 0.2, 4.5);
+  var lA = clamp(cA.gf * cH.gs / mu * PRE.trasferta, 0.2, 4.5);
+  var quota = (cH.golPT + cA.golPT + PRE.quotaPrimoTempo * PRE.pseudoGolPT) / (cH.golTot + cA.golTot + PRE.pseudoGolPT);
+  quota = clamp(quota, 0.35, 0.55);
+  var out = probDaGolAttesi(lH, lA, quota);
+  out.lH = lH; out.lA = lA; out.quotaPT = quota;
+  return out;
+}
+// "11/10" -> 2,10. Accetta anche un numero scritto a mano con punto o virgola.
+function quotaDec(x) {
+  if (x === null || x === undefined) return null;
+  var s = String(x).trim();
+  var m = /^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/.exec(s);
+  if (m) { var den = Number(m[2]); return den > 0 ? 1 + Number(m[1]) / den : null; }
+  var n = num(s.replace(',', '.'));
+  return (n !== null && n > 1 && n < 1000) ? n : null;
+}
+function leggiQuote(j) {
+  var ms = (j && Array.isArray(j.markets)) ? j.markets : [], out = {};
+  ms.forEach(function (m) {
+    if (!m || m.isLive === true) return;
+    var nome = String(m.marketName || '').toLowerCase().trim();
+    var ch = Array.isArray(m.choices) ? m.choices : [];
+    function q(n) {
+      for (var i = 0; i < ch.length; i++) {
+        if (ch[i] && String(ch[i].name).toLowerCase().trim() === n) {
+          var v = quotaDec(ch[i].fractionalValue);
+          return v !== null ? v : quotaDec(ch[i].decimalValue);
+        }
+      }
+      return null;
+    }
+    if (nome === 'full time' && out['1'] === undefined) {
+      var a = q('1'), b = q('x'), c = q('2');
+      if (a && b && c) { out['1'] = a; out.X = b; out['2'] = c; }
+    } else if (nome === 'both teams to score' && out.GG === undefined) {
+      var y = q('yes'), n2 = q('no');
+      if (y && n2) { out.GG = y; out.NG = n2; }
+    } else if (nome === 'match goals' && String(m.choiceGroup) === '2.5' && out.O25 === undefined) {
+      var ov = q('over'), un = q('under');
+      if (ov && un) { out.O25 = ov; out.U25 = un; }
+    }
+  });
+  return out;
+}
+// Gol attesi totali che danno quella probabilita' di Over 2.5.
+function golDaOver25(p) {
+  var lo = 0.2, hi = 8;
+  for (var i = 0; i < 50; i++) {
+    var mid = (lo + hi) / 2, f = 1 - Math.exp(-mid) * (1 + mid + mid * mid / 2);
+    if (f < p) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+// Probabilita' del mercato, tolto il margine del bookmaker.
+function mercatoDaQuote(q) {
+  var out = {}, stimate = {}, s;
+  if (q['1'] && q.X && q['2']) {
+    s = 1 / q['1'] + 1 / q.X + 1 / q['2'];
+    out['1'] = (1 / q['1']) / s; out.X = (1 / q.X) / s; out['2'] = (1 / q['2']) / s;
+  }
+  if (q.O25 && q.U25) { s = 1 / q.O25 + 1 / q.U25; out.O25 = (1 / q.O25) / s; }
+  if (q.GG && q.NG) { s = 1 / q.GG + 1 / q.NG; out.GG = (1 / q.GG) / s; }
+  ESITI.forEach(function (k) {
+    if (out[k] === undefined && q[k]) { out[k] = clamp((1 / q[k]) / PRE.margineBook, 0.01, 0.99); stimate[k] = true; }
+  });
+  var gol = null;
+  if (out.O25 !== undefined) {
+    gol = golDaOver25(out.O25);
+    if (out.O05PT === undefined) { out.O05PT = 1 - Math.exp(-PRE.quotaPrimoTempo * gol); stimate.O05PT = true; }
+  }
+  return { p: out, stimate: stimate, gol: gol };
+}
+function pronostico(modello, quoteSofa, quoteMano) {
+  var q = {}, k;
+  for (k in (quoteSofa || {})) if (quoteSofa[k]) q[k] = quoteSofa[k];
+  for (k in (quoteMano || {})) {
+    if (!quoteMano[k]) continue;
+    q[k] = quoteMano[k];
+    // una quota scritta a mano non va mescolata con il lato opposto letto da SofaScore
+    if (k === 'O25') delete q.U25;
+    if (k === 'GG') delete q.NG;
+  }
+  var M = mercatoDaQuote(q);
+  var righe = ESITI.map(function (e) {
+    var pm = modello[e], pk = M.p[e];
+    var p = (pk !== undefined) ? PRE.pesoMercato * pk + (1 - PRE.pesoMercato) * pm : pm;
+    var quota = q[e] || null;
+    return {
+      k: e, modello: pm, mercato: pk === undefined ? null : pk, mercatoStimato: !!M.stimate[e], p: p, quota: quota,
+      aMano: !!(quoteMano && quoteMano[e]), valore: quota ? p * quota : null, quotaMin: PRE.margine / p, scarto: p / BASE_ESITI[e],
+      troppo: pk !== undefined && Math.abs(pm - pk) > PRE.divergenzaMax
+    };
+  });
+  var conQuota = righe.filter(function (r) { return r.valore !== null; }), scelta = null, modo;
+  if (conQuota.length) {
+    // dove il modello e' troppo lontano dal mercato non propongo l'entrata: di solito sbaglia il modello
+    var buone = conQuota.filter(function (r) { return !r.troppo; });
+    (buone.length ? buone : conQuota).forEach(function (r) { if (!scelta || r.valore > scelta.valore) scelta = r; });
+    if (!buone.length) modo = 'diverge';
+    else modo = scelta.valore >= PRE.margine ? 'valore' : scelta.valore >= 0.97 ? 'pari' : 'no';
+  } else {
+    righe.forEach(function (r) { if (!scelta || r.scarto > scelta.scarto) scelta = r; });
+    modo = 'senzaQuota';
+  }
+  return { righe: righe, scelta: scelta, modo: modo, golMercato: M.gol };
+}
+// Com'e' andata davvero una giocata, a partita finita. null = non si puo' dire.
+function esitoReale(k, ev) {
+  var g = golPartita(ev);
+  if (g.h === null || g.a === null) return null;
+  if (k === '1') return g.h > g.a;
+  if (k === 'X') return g.h === g.a;
+  if (k === '2') return g.h < g.a;
+  if (k === 'O25') return g.h + g.a >= 3;
+  if (k === 'GG') return g.h > 0 && g.a > 0;
+  if (k === 'O05PT') return (g.h1 === null || g.a1 === null) ? null : g.h1 + g.a1 >= 1;
+  return null;
+}
+
 function giudizio(indice) {
   if (indice >= 75) return 'Ritmo gol alto';
   if (indice >= 55) return 'Sopra la media';
@@ -856,16 +1083,24 @@ function risposta(d) {
 function percorso(tipo, id) {
   return '/api/v1/event/' + id + (tipo === 'event' ? '' : '/' + tipo);
 }
+// "Non trovato" e' definitivo solo a partita finita: in diretta il dato puo' arrivare dopo, quindi riprovo ogni 5 minuti.
+function assenteOra(P, tipo) {
+  var t = P.assenti[tipo];
+  if (!t) return false;
+  if (statoPartita() !== 'inprogress') return true;
+  return Date.now() - t < 300000;
+}
 async function aggiornaDato(tipo) {
   var P = S.partita;
-  if (!P || P.assenti[tipo]) return;
+  if (!P || assenteOra(P, tipo)) return;
   var r = await chiedi(percorso(tipo, P.id));
   if (S.partita !== P) return;
   if (r.s === 200 && r.j) {
     P.dati[tipo] = r.j; P.agg[tipo] = Date.now(); P.errori[tipo] = null;
+    delete P.assenti[tipo];
     if (tipo === 'statistics') scattaFoto(P);
   }
-  else if (r.s === 404) { P.assenti[tipo] = true; P.errori[tipo] = null; }
+  else if (r.s === 404) { P.assenti[tipo] = Date.now(); P.errori[tipo] = null; }
   else { P.errori[tipo] = r.s === 0 ? 'nessuna risposta' : 'errore ' + r.s; }
   ridisegna();
 }
@@ -904,21 +1139,142 @@ async function caricaPartita(id) {
   try { localStorage.setItem('ig-ultimo-id', P.id); } catch (e) {}
   el('elenco').hidden = true;
   el('secPartita').hidden = false;
+  el('pre').innerHTML = '';
   ridisegna();
-  var tipi = ['event', 'graph', 'shotmap', 'incidents', 'statistics'];
+  await aggiornaDato('event');
+  if (S.partita !== P) return;
+  if (!P.dati.event) {
+    if (P.assenti.event) avviso('SofaScore non conosce una partita con id ' + P.id + '. Controlla il numero.');
+    else if (/403|429/.test(String(P.errori.event))) avviso('SofaScore ha rifiutato la richiesta (' + P.errori.event + '). Aspetta qualche minuto prima di riprovare: nel frattempo non insisto.');
+    else avviso('Non sono riuscito a leggere la partita ' + P.id + ' (' + (P.errori.event || 'errore') + '). Riprova fra poco.');
+    return;
+  }
+  if (statoPartita() === 'notstarted') {
+    await analizzaPre();
+    if (S.partita !== P) return;
+    avviaLive();
+    return;
+  }
+  var tipi = ['graph', 'shotmap', 'incidents', 'statistics'];
   for (var i = 0; i < tipi.length; i++) {
     await aggiornaDato(tipi[i]);
     if (S.partita !== P) return;
-    if (i === 0 && !P.dati.event) {
-      if (P.assenti.event) avviso('SofaScore non conosce una partita con id ' + P.id + '. Controlla il numero.');
-      else if (/403|429/.test(String(P.errori.event))) avviso('SofaScore ha rifiutato la richiesta (' + P.errori.event + '). Aspetta qualche minuto prima di riprovare: nel frattempo non insisto.');
-      else avviso('Non sono riuscito a leggere la partita ' + P.id + ' (' + (P.errori.event || 'errore') + '). Riprova fra poco.');
-      return;
-    }
   }
   salvaStorico(statoPartita() === 'finished');
   if (statoPartita() !== 'finished') avviaLive();
 }
+// ---------- pronostico pre-partita ----------
+async function analizzaPre() {
+  var P = S.partita;
+  if (!P || !P.dati.event) return;
+  var ev = P.dati.event.event || {};
+  var idH = ev.homeTeam && ev.homeTeam.id, idA = ev.awayTeam && ev.awayTeam.id;
+  var mano = (P.pre && P.pre.mano) || {};
+  if (!idH || !idA) { P.pre = { mano: mano, errore: 'SofaScore non indica le due squadre di questa partita.' }; ridisegna(); return; }
+  P.pre = { inCorso: true, mano: mano };
+  ridisegna();
+  var rH = await chiedi('/api/v1/team/' + idH + '/events/last/0'); if (S.partita !== P) return;
+  var rA = await chiedi('/api/v1/team/' + idA + '/events/last/0'); if (S.partita !== P) return;
+  var rQ = await chiedi('/api/v1/event/' + P.id + '/odds/1/all'); if (S.partita !== P) return;
+  var X = { mano: mano, quando: Date.now(), stati: { casa: rH.s, ospite: rA.s, quote: rQ.s }, grezzo: { casa: rH.j, ospite: rA.j, quote: rQ.j } };
+  function perche(s) { return s === 0 ? 'nessuna risposta' : 'errore ' + s; }
+  if (rH.s !== 200 || rA.s !== 200) {
+    X.errore = 'Non sono riuscito a leggere le ultime partite ' + (rH.s !== 200 ? 'della squadra di casa (' + perche(rH.s) : 'della squadra ospite (' + perche(rA.s)) + '). Senza quelle non calcolo il pronostico.';
+  } else {
+    var ut = ev.tournament && ev.tournament.uniqueTournament;
+    var torneoId = (ut && ut.id !== undefined) ? ut.id : null;
+    X.cH = campioneSquadra(rH.j, idH, P.id, torneoId, num(ev.startTimestamp));
+    X.cA = campioneSquadra(rA.j, idA, P.id, torneoId, num(ev.startTimestamp));
+    if (X.cH.n < 3 || X.cA.n < 3) {
+      X.errore = 'Troppe poche partite recenti (' + X.cH.n + ' per la squadra di casa, ' + X.cA.n + ' per l\'ospite): ne servono almeno 3 a testa.';
+    } else {
+      X.modello = modelloPre(X.cH, X.cA);
+      X.quoteSofa = rQ.s === 200 ? leggiQuote(rQ.j) : {};
+    }
+  }
+  P.pre = X;
+  ridisegna();
+  salvaPronostico(P);
+}
+function nomiEsiti(casa, ospite) {
+  return {
+    '1': ['1', 'vince ' + casa], 'X': ['X', 'pareggio'], '2': ['2', 'vince ' + ospite],
+    'O25': ['Over 2.5', 'almeno 3 gol'], 'GG': ['GG', 'segnano entrambe'], 'O05PT': ['Over 0.5 primo tempo', 'almeno 1 gol nel primo tempo']
+  };
+}
+function segno(x) { return (x >= 0 ? '+' : '−') + dec(Math.abs(x), 1); }
+function disegnaPre(P, ev, casa, ospite, finita) {
+  var box = el('pre');
+  var a = document.activeElement;
+  if (!S.forzaPre && a && a.tagName === 'INPUT' && box.contains(a)) return;   // non disturbo mentre scrivi una quota
+  var X = P.pre;
+  if (!X || X.inCorso) { box.innerHTML = '<p class="tenue">Leggo le ultime partite delle due squadre e le quote…</p>'; return; }
+  if (X.errore) {
+    box.innerHTML = '<p class="avviso" style="margin-top:0">' + esc(X.errore) + '</p><div class="riga" style="margin-top:12px"><button type="button" data-azione="pre">Riprova</button></div>';
+    return;
+  }
+  var nomi = nomiEsiti(casa, ospite), R = pronostico(X.modello, X.quoteSofa, X.mano), s = R.scelta;
+  var gioc = nomi[s.k][0] + ' (' + nomi[s.k][1] + ')', qmin = dec(s.quotaMin, 2), cls, titolo, sotto;
+  if (R.modo === 'valore') {
+    cls = 'ok'; titolo = 'Entra: ' + gioc + ' a quota ' + dec(s.quota, 2);
+    sotto = 'Probabilità ' + perc(s.p) + ', valore ' + segno((s.valore - 1) * 100) + '%. Se la quota scende sotto ' + qmin + ' non conviene più.';
+  } else if (R.modo === 'pari') {
+    cls = 'medio'; titolo = 'Aspetta: ' + gioc + ' è la migliore, ma senza margine';
+    sotto = 'Probabilità ' + perc(s.p) + ', quota ' + dec(s.quota, 2) + '. Entra solo se sale a ' + qmin + ' o più.';
+  } else if (R.modo === 'diverge') {
+    cls = 'no'; titolo = 'Non mi fido: il mio modello è troppo lontano dal mercato';
+    sotto = 'Su tutte le giocate con una quota la distanza supera ' + Math.round(PRE.divergenzaMax * 100) + ' punti. In questi casi di solito sbaglia il modello: nessuna entrata.';
+  } else if (R.modo === 'no') {
+    cls = 'no'; titolo = 'Non conviene: a queste quote nessuna giocata ha valore';
+    sotto = 'La meno lontana è ' + gioc + ': probabilità ' + perc(s.p) + ', quota ' + dec(s.quota, 2) + ', ne servirebbe ' + qmin + '.';
+  } else {
+    cls = ''; titolo = 'Indicazione: ' + gioc + ', probabilità ' + perc(s.p);
+    sotto = 'È la giocata che si stacca di più dalla media delle partite. Mancano le quote, quindi non so se conviene: entra solo a quota ' + qmin + ' o più, e scrivi le quote nella tabella.';
+  }
+  var h = '<div class="scelta ' + cls + '"><div class="titolo">' + esc(titolo) + '</div><div class="sotto">' + esc(sotto) + '</div></div>';
+  h += '<div class="scorri"><table class="larga"><thead><tr><th>Giocata</th><th>Probabilità</th><th>Mio modello</th><th>Mercato</th><th>Quota minima</th><th>Quota offerta</th><th>Valore</th>' + (finita ? '<th>Com\'è finita</th>' : '') + '</tr></thead><tbody>';
+  var stim = false, lontano = false;
+  R.righe.forEach(function (r) {
+    if (r.mercatoStimato) stim = true;
+    if (r.troppo) lontano = true;
+    var es = finita ? esitoReale(r.k, ev) : null;
+    h += '<tr><td><b>' + esc(nomi[r.k][0]) + '</b><small>' + esc(nomi[r.k][1]) + '</small></td>'
+      + '<td><b>' + perc(r.p) + '</b></td><td>' + perc(r.modello) + (r.troppo ? ' !' : '') + '</td>'
+      + '<td>' + (r.mercato === null ? '–' : perc(r.mercato) + (r.mercatoStimato ? '*' : '')) + '</td>'
+      + '<td>' + dec(r.quotaMin, 2) + '</td>'
+      + '<td><input class="q" type="text" inputmode="decimal" data-k="' + r.k + '" value="' + (r.quota ? dec(r.quota, 2) : '') + '" placeholder="quota" aria-label="Quota offerta per ' + esc(nomi[r.k][0]) + '"></td>'
+      + '<td>' + (r.valore === null ? '–' : '<span class="' + (r.valore >= PRE.margine && !r.troppo ? 'su' : 'giu') + '">' + segno((r.valore - 1) * 100) + '%</span>') + '</td>'
+      + (finita ? '<td>' + (es === null ? '–' : es ? 'presa' : 'persa') + '</td>' : '') + '</tr>';
+  });
+  h += '</tbody></table></div>';
+  var note = [];
+  note.push('Gol attesi dal mio modello: ' + esc(casa) + ' ' + dec(X.modello.lH, 2) + ', ' + esc(ospite) + ' ' + dec(X.modello.lA, 2) + (R.golMercato !== null ? '. Gol attesi dal mercato: ' + dec(R.golMercato, 2) + ' in tutto' : '') + '.');
+  note.push('Ultime ' + X.cH.n + ' partite di ' + esc(casa) + ': segna ' + dec(X.cH.mediaGf, 2) + ' e subisce ' + dec(X.cH.mediaGs, 2) + ' di media. Ultime ' + X.cA.n + ' di ' + esc(ospite) + ': segna ' + dec(X.cA.mediaGf, 2) + ' e subisce ' + dec(X.cA.mediaGs, 2) + '.');
+  var nq = Object.keys(X.quoteSofa || {}).length;
+  note.push(nq ? 'Quote lette da SofaScore: puoi sostituirle con quelle del tuo bookmaker scrivendole nella tabella.'
+    : X.stati.quote === 404 ? 'SofaScore non ha quote per questa partita: scrivi tu quelle del tuo bookmaker.'
+    : X.stati.quote === 200 ? 'SofaScore ha risposto, ma non ho riconosciuto le quote: scrivile tu e mandami la diagnostica.'
+    : 'Quote non lette da SofaScore (' + (X.stati.quote === 0 ? 'nessuna risposta' : 'errore ' + X.stati.quote) + '): scrivile tu.');
+  if (stim) note.push('* Mercato stimato: per l\'Over 0.5 primo tempo lo ricavo dai gol attesi del mercato; per una quota scritta da sola tolgo un margine del 5%.');
+  if (lontano) note.push('! Qui il mio modello dista dal mercato più di ' + Math.round(PRE.divergenzaMax * 100) + ' punti: su quella giocata non propongo l\'entrata, perché di solito in questi casi sbaglia il modello.');
+  note.push('Il modello guarda solo i risultati recenti: non conosce la forza degli avversari affrontati, le assenze e le formazioni. Pesi provvisori.');
+  h += '<p class="tenue piccolo" style="margin-top:10px; max-width:none">' + note.join(' ') + '</p>';
+  box.innerHTML = h;
+}
+function salvaPronostico(P) {
+  var X = P.pre;
+  if (!S.db || !X || !X.modello || statoPartita() !== 'notstarted') return;
+  var ev = P.dati.event.event || {}, R = pronostico(X.modello, X.quoteSofa, X.mano);
+  dbRichiesta('pronostici', 'readwrite', function (st) {
+    return st.put({
+      id: P.id, quando: Date.now(), versione: VERSIONE, inizio: num(ev.startTimestamp),
+      casa: (ev.homeTeam && ev.homeTeam.name) || '', ospite: (ev.awayTeam && ev.awayTeam.name) || '', torneo: (ev.tournament && ev.tournament.name) || '',
+      golCasa: X.modello.lH, golOspite: X.modello.lA, scelta: R.scelta.k, modo: R.modo,
+      righe: R.righe.map(function (r) { return { k: r.k, p: r.p, modello: r.modello, mercato: r.mercato, quota: r.quota, aMano: r.aMano, valore: r.valore }; })
+    });
+  }).then(contaStorico);
+}
+
 function avviaLive() {
   fermaLive();
   S.tLive = setInterval(passoLive, PASSO_LIVE);
@@ -928,10 +1284,14 @@ async function passoLive() {
   var P = S.partita;
   if (!P || S.spento || !S.ponteOk || S.coda.length > 1 || S.inVolo) return;
   var stato = statoPartita(), tipo = 'event';
-  if (stato === 'inprogress') {
+  if (stato !== 'inprogress') {
+    // partita non iniziata (o sospesa): basta guardare la scheda una volta al minuto
+    S.passo++;
+    if (S.passo % 4 !== 0) return;
+  } else {
     for (var k = 0; k < GIRO_LIVE.length; k++) {
       tipo = GIRO_LIVE[S.passo % GIRO_LIVE.length]; S.passo++;
-      if (!P.assenti[tipo]) break;
+      if (!assenteOra(P, tipo)) break;
     }
   }
   await aggiornaDato(tipo);
@@ -983,6 +1343,42 @@ async function mostraLive() {
   box.innerHTML = h;
 }
 
+async function mostraOggi() {
+  if (!S.ponteOk) {
+    avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
+    el('avviso').dataset.ponte = '1';
+    return;
+  }
+  S.spento = false;
+  var box = el('elenco'), d = new Date();
+  var giorno = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  box.hidden = false;
+  box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo le partite di oggi…</p>';
+  var r = await chiedi('/api/v1/sport/football/scheduled-events/' + giorno);
+  if (r.s !== 200 || !r.j || !Array.isArray(r.j.events)) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">Non sono riuscito a leggere le partite di oggi (' + (r.s === 0 ? 'nessuna risposta' : 'errore ' + esc(r.s)) + ').</p>';
+    return;
+  }
+  var evs = r.j.events.filter(function (e) { return e && e.id && e.status && e.status.type === 'notstarted'; });
+  function peso(e) {
+    var u = e.tournament && e.tournament.uniqueTournament;
+    return (e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
+  }
+  evs.sort(function (a, b) { return peso(b) - peso(a); });
+  if (!evs.length) { box.innerHTML = '<p class="tenue" style="padding:10px 0">Oggi non ci sono altre partite da giocare.</p>'; return; }
+  var h = '';
+  evs.slice(0, 80).forEach(function (e) {
+    var t = e.tournament || {}, cat = t.category || {}, quando = num(e.startTimestamp), hh = '';
+    if (quando !== null) { var dd = new Date(quando * 1000); hh = ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2); }
+    h += '<button type="button" data-id="' + esc(e.id) + '">'
+      + '<span class="torneo">' + esc(cat.name ? cat.name + ', ' : '') + esc(t.name) + '</span>'
+      + '<span>' + esc((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + esc((e.awayTeam && e.awayTeam.name) || '?') + '</span>'
+      + '<span class="ris">' + esc(hh) + '</span></button>';
+  });
+  if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', dalle più seguite.</p>';
+  box.innerHTML = h;
+}
+
 // ---------- disegno ----------
 function datiCalcolo(P) {
   var ev = leggiEventi(P.dati.incidents);
@@ -992,7 +1388,7 @@ function rigaDati(P) {
   var parti = [];
   ['graph', 'shotmap', 'statistics', 'incidents'].forEach(function (t) {
     var n = NOMI_DATO[t];
-    if (P.assenti[t]) parti.push(n + ': non previsto per questa partita');
+    if (P.assenti[t]) parti.push(n + (statoPartita() === 'inprogress' ? ': non ancora disponibile' : ': non previsto per questa partita'));
     else if (P.errori[t]) parti.push(n + ': ' + P.errori[t] + (P.agg[t] ? ', ultimo buono ' + ora(P.agg[t]) : ''));
     else if (P.agg[t]) parti.push(n + ' ' + ora(P.agg[t]));
     else parti.push(n + ': in lettura');
@@ -1025,6 +1421,11 @@ function svgIndice(serie, d, xMax) {
       + '<circle cx="' + x(g.t).toFixed(1) + '" cy="' + (T + 2) + '" r="6" fill="' + col + '"/>';
   });
   if (serie.length) {
+    var rif = PESI.golMedi / 90;
+    var ptC = serie.map(function (p) { return x(p.m).toFixed(1) + ',' + y(clamp(100 * p.lamC / rif, 0, 100)).toFixed(1); });
+    var ptO = serie.map(function (p) { return x(p.m).toFixed(1) + ',' + y(clamp(100 * p.lamO / rif, 0, 100)).toFixed(1); });
+    s += '<polyline points="' + ptC.join(' ') + '" fill="none" stroke="#f4c542" stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>'
+      + '<polyline points="' + ptO.join(' ') + '" fill="none" stroke="#73c8ff" stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>';
     var pts = serie.map(function (p) { return x(p.m).toFixed(1) + ',' + y(p.indice).toFixed(1); });
     s += '<polygon points="' + x(serie[0].m).toFixed(1) + ',' + y(0).toFixed(1) + ' ' + pts.join(' ') + ' ' + x(serie[serie.length - 1].m).toFixed(1) + ',' + y(0).toFixed(1) + '" fill="rgba(243,239,228,.10)"/>'
       + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#f3efe4" stroke-width="2.5" stroke-linejoin="round"/>';
@@ -1080,12 +1481,12 @@ function disegnaVerifica() {
   var V = S.verifica, box = el('verifica');
   if (!V || !V.partite) { box.innerHTML = '<p class="tenue">Lo storico non contiene ancora partite finite con momentum o tiri. Raccogli qualche giornata qui sotto.</p>'; return; }
   var h = '<p>' + V.partite + (V.partite === 1 ? ' partita finita' : ' partite finite') + ', ' + migliaia(V.minuti) + ' minuti osservati. In media un gol è arrivato entro 10 minuti nel <b>' + perc(V.base) + '</b> dei casi.</p>';
-  h += '<table class="larga"><thead><tr><th>Indice</th><th>Minuti osservati</th><th>Partite</th><th>Gol entro 10\' (reale)</th><th>Intervallo probabile</th><th>Stima del modello</th></tr></thead><tbody>';
+  h += '<div class="scorri"><table class="larga"><thead><tr><th>Indice</th><th>Minuti osservati</th><th>Partite</th><th>Gol entro 10\' (reale)</th><th>Intervallo probabile</th><th>Stima del modello</th></tr></thead><tbody>';
   V.fasce.forEach(function (f) {
     h += '<tr><td>' + f.da + '–' + f.a + ', ' + f.nome + '</td><td>' + migliaia(f.n) + '</td><td>' + f.partite + '</td><td>' + (f.freq === null ? '–' : '<b>' + perc(f.freq) + '</b>')
       + '</td><td>' + (f.lo === null ? '–' : perc(f.lo) + ' – ' + perc(f.hi)) + '</td><td>' + (f.stimato === null ? '–' : perc(f.stimato)) + '</td></tr>';
   });
-  h += '</tbody></table>';
+  h += '</tbody></table></div>';
   var piene = V.fasce.filter(function (f) { return f.n >= 150 && f.lo !== null; });
   var giud;
   if (V.partite < 30) giud = 'Con ' + V.partite + (V.partite === 1 ? ' partita' : ' partite') + ' non si può giudicare: servono almeno 30 partite per un primo segnale, 150 per fidarsi.';
@@ -1118,7 +1519,13 @@ function ridisegna() {
     '<div class="tabellone"><div class="squadra casa">' + esc(casa) + '</div><div class="punteggio">' + gh + ' : ' + ga + '</div><div class="squadra ospite">' + esc(ospite) + '</div></div>'
     + '<div class="sotto-tabellone"><span>' + esc(ev ? (((ev.tournament && ev.tournament.name) || '') + ', ' + dove.etichetta) : 'Leggo la partita ' + P.id + '…') + '</span>'
     + '<span>id ' + esc(P.id) + '</span></div>'
-    + '<p class="tenue piccolo" style="margin:10px 0 0; max-width:none">Dati letti: ' + esc(rigaDati(P)) + '</p>';
+    + '<p class="tenue piccolo" style="margin:10px 0 0; max-width:none">' + (dove.stato === 'attesa' ? 'I dati della diretta arrivano al calcio d\'inizio: controllo la scheda una volta al minuto.' : 'Dati letti: ' + esc(rigaDati(P))) + '</p>'
+    + ((ev && dove.stato !== 'attesa') ? '<div class="riga" style="margin-top:12px"><button type="button" data-azione="pre">'
+      + (!P.pre ? 'Calcola il pronostico pre-partita' : P.preMostra ? 'Nascondi il pronostico pre-partita' : 'Mostra il pronostico pre-partita') + '</button></div>' : '');
+
+  el('secLive').hidden = dove.stato === 'attesa';
+  el('secPre').hidden = !(dove.stato === 'attesa' || (P.pre && P.preMostra));
+  if (!el('secPre').hidden) disegnaPre(P, ev, casa, ospite, dove.stato === 'finita');
 
   var haTiri = !!P.dati.shotmap, haGraph = !!P.dati.graph;
   var eff = dove.eff;
@@ -1170,7 +1577,7 @@ function ridisegna() {
         + '</tbody></table><p class="tenue piccolo" style="margin-top:8px">Tiri e xG vengono dalla mappa dei tiri, che riporta il minuto di ogni tiro. Corner, tocchi in area e grandi occasioni si contano solo mentre segui la partita in diretta: «n.d.» vuol dire che non la seguo da abbastanza minuti.</p>';
     }
     var xMax = Math.max(95, Math.ceil(eff) + 2);
-    el('grIndice').innerHTML = svgIndice(serie, d, xMax) + '<p class="tenue piccolo" style="margin-top:6px">I pallini in alto sono i gol: giallo ' + esc(casa) + ', azzurro ' + esc(ospite) + '. Il punto arancione è adesso.</p>';
+    el('grIndice').innerHTML = svgIndice(serie, d, xMax) + '<p class="tenue piccolo" style="margin-top:6px">Linea bianca: indice totale. Linea gialla ' + esc(casa) + ', azzurra ' + esc(ospite) + ': il ritmo gol di ciascuna squadra sulla stessa scala. I pallini in alto sono i gol, il punto arancione è adesso.</p>';
     el('grMomentum').innerHTML = haGraph ? svgMomentum(d, xMax, casa, ospite)
       : '<p class="tenue">' + (P.assenti.graph ? 'SofaScore non fornisce il momentum per questa partita.' : 'Momentum non ancora letto.') + '</p>';
   }
@@ -1193,11 +1600,12 @@ function apriDb() {
   return new Promise(function (res) {
     try {
       if (!window.indexedDB) { res(null); return; }
-      var rq = indexedDB.open('indicegol', 2);
+      var rq = indexedDB.open('indicegol', 3);
       rq.onupgradeneeded = function () {
         var db = rq.result;
         if (!db.objectStoreNames.contains('partite')) db.createObjectStore('partite', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('saltate')) db.createObjectStore('saltate', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('pronostici')) db.createObjectStore('pronostici', { keyPath: 'id' });
       };
       rq.onsuccess = function () { res(rq.result); };
       rq.onerror = function () { res(null); };
@@ -1210,6 +1618,11 @@ function contaStorico() {
     var rq = S.db.transaction('partite').objectStore('partite').count();
     rq.onsuccess = function () {
       el('storicoRiga').textContent = rq.result ? 'Storico: ' + rq.result + (rq.result === 1 ? ' partita salvata' : ' partite salvate') + ' su questo computer.' : 'Storico: nessuna partita salvata.';
+    };
+    var rp = S.db.transaction('pronostici').objectStore('pronostici').count();
+    rp.onsuccess = function () {
+      el('pronosticiRiga').hidden = !rp.result;
+      el('pronosticiRiga').textContent = 'Pronostici pre-partita registrati: ' + rp.result + '. La verifica dei risultati arriva con la prossima versione.';
     };
   } catch (e) {}
 }
@@ -1325,19 +1738,19 @@ async function raccogli() {
 
 function esportaStorico() {
   if (!S.db) { avviso('Storico non disponibile in questo browser.'); return; }
-  try {
-    var rq = S.db.transaction('partite').objectStore('partite').getAll();
-    rq.onsuccess = function () {
-      var arr = rq.result || [];
-      if (!arr.length) { avviso('Lo storico è vuoto: carica almeno una partita.', 'info'); return; }
-      var blob = new Blob([JSON.stringify({ app: 'indice-gol', versione: VERSIONE, esportato: new Date().toISOString(), partite: arr })], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'indice-gol-storico-' + new Date().toISOString().slice(0, 10) + '.json';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
-    };
-  } catch (e) { avviso('Non sono riuscito a esportare lo storico.'); }
+  Promise.all([
+    dbRichiesta('partite', 'readonly', function (st) { return st.getAll(); }),
+    dbRichiesta('pronostici', 'readonly', function (st) { return st.getAll(); })
+  ]).then(function (r) {
+    var partite = r[0] || [], pron = r[1] || [];
+    if (!partite.length && !pron.length) { avviso('Lo storico è vuoto: carica almeno una partita.', 'info'); return; }
+    var blob = new Blob([JSON.stringify({ app: 'indice-gol', versione: VERSIONE, esportato: new Date().toISOString(), partite: partite, pronostici: pron })], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'indice-gol-storico-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  });
 }
 
 // ---------- diagnostica: serve a me per correggere al primo colpo ----------
@@ -1360,12 +1773,33 @@ function diagnostica() {
     function senzaGiocatore(o) { var c = {}; Object.keys(o || {}).forEach(function (k) { if (k !== 'player' && k !== 'draw' && k !== 'goalkeeper') c[k] = o[k]; }); return c; }
     out.partita = {
       id: P.id, assenti: P.assenti, errori: P.errori, fotografie: P.foto.length, ultimaFoto: P.foto[P.foto.length - 1] || null,
-      scheda: { status: e.status, time: e.time, startTimestamp: e.startTimestamp, hasXg: e.hasXg, lastPeriod: e.lastPeriod, homeScore: e.homeScore, awayScore: e.awayScore, torneo: e.tournament && e.tournament.name },
+      scheda: { squadre: [e.homeTeam && e.homeTeam.id, e.awayTeam && e.awayTeam.id], status: e.status, time: e.time, startTimestamp: e.startTimestamp, hasXg: e.hasXg, lastPeriod: e.lastPeriod, homeScore: e.homeScore, awayScore: e.awayScore, torneo: e.tournament && e.tournament.name },
       momentum: { chiavi: Object.keys(P.dati.graph || {}), n: g.length, primi: g.slice(0, 3), ultimi: g.slice(-3), periodTime: P.dati.graph && P.dati.graph.periodTime },
       tiri: { n: t.length, primo: senzaGiocatore(t[0]), ultimo: senzaGiocatore(t[t.length - 1]) },
       eventi: inc.slice(0, 8).map(function (i) { return { incidentType: i.incidentType, incidentClass: i.incidentClass, time: i.time, addedTime: i.addedTime, isHome: i.isHome, homeScore: i.homeScore, awayScore: i.awayScore }; }),
       totali: voci
     };
+    if (P.pre) {
+      var G = P.pre.grezzo || {};
+      var primo = function (j) {
+        var e = j && Array.isArray(j.events) && j.events[j.events.length - 1];
+        if (!e) return null;
+        return { n: j.events.length, chiavi: Object.keys(j), ultimo: { id: e.id, status: e.status, startTimestamp: e.startTimestamp, homeTeam: e.homeTeam && { id: e.homeTeam.id, name: e.homeTeam.name }, awayTeam: e.awayTeam && { id: e.awayTeam.id, name: e.awayTeam.name }, homeScore: e.homeScore, awayScore: e.awayScore, torneo: e.tournament && e.tournament.uniqueTournament && e.tournament.uniqueTournament.id } };
+      };
+      var mercati = [];
+      try {
+        (G.quote.markets || []).slice(0, 16).forEach(function (m) {
+          mercati.push(m.marketName + '|' + m.choiceGroup + '|live:' + m.isLive + '|' + (m.choices || []).map(function (c) { return c.name + '=' + c.fractionalValue; }).join(','));
+        });
+      } catch (x2) {}
+      var ev2 = e || {};
+      out.partita.pre = {
+        stati: P.pre.stati, errore: P.pre.errore || null, squadre: { casa: ev2.homeTeam && ev2.homeTeam.id, ospite: ev2.awayTeam && ev2.awayTeam.id, torneo: ev2.tournament && ev2.tournament.uniqueTournament && ev2.tournament.uniqueTournament.id },
+        campioneCasa: P.pre.cH || null, campioneOspite: P.pre.cA || null, modello: P.pre.modello || null,
+        quoteSofa: P.pre.quoteSofa || null, mano: P.pre.mano, rispostaCasa: primo(G.casa), rispostaOspite: primo(G.ospite),
+        chiaviQuote: G.quote ? Object.keys(G.quote) : null, mercati: mercati
+      };
+    }
   }
   return JSON.stringify(out, null, 1);
 }
@@ -1396,6 +1830,31 @@ function avvio() {
   });
   el('inId').addEventListener('keydown', function (e) { if (e.key === 'Enter') el('btnCarica').click(); });
   el('btnLive').addEventListener('click', mostraLive);
+  el('btnOggi').addEventListener('click', mostraOggi);
+  el('secPartita').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-azione="pre"]') : null;
+    var P = S.partita;
+    if (!b || !P || !P.dati.event) return;
+    if (P.pre && P.pre.inCorso) return;
+    if (P.pre && P.pre.modello && !P.pre.errore) { P.preMostra = !P.preMostra; ridisegna(); }
+    else { P.preMostra = true; analizzaPre(); }
+  });
+  el('pre').addEventListener('change', function (e) {
+    var t = e.target, P = S.partita;
+    if (!t || !t.classList || !t.classList.contains('q') || !P || !P.pre) return;
+    var k = t.getAttribute('data-k'), v = quotaDec(t.value);
+    if (String(t.value).trim() === '') delete P.pre.mano[k];
+    else if (v === null) { t.value = ''; delete P.pre.mano[k]; }
+    else P.pre.mano[k] = v;
+    // aspetto che il cursore sia passato al campo successivo, poi ridisegno e glielo restituisco
+    setTimeout(function () {
+      if (S.partita !== P) return;
+      var att = document.activeElement, dopo = (att && att.getAttribute && el('pre').contains(att)) ? att.getAttribute('data-k') : null;
+      S.forzaPre = true; ridisegna(); S.forzaPre = false;
+      if (dopo) { var nu = el('pre').querySelector('input.q[data-k="' + dopo + '"]'); if (nu) { nu.focus(); nu.select(); } }
+      salvaPronostico(P);
+    }, 0);
+  });
   el('elenco').addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('button[data-id]') : null;
     if (b) { el('inId').value = b.getAttribute('data-id'); caricaPartita(b.getAttribute('data-id')); }
