@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.1.0</title>
+<title>Indice Gol 0.2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -44,6 +44,12 @@ button:hover, .tasto:hover{background:rgba(243,239,228,.14)}
 button.pieno:hover, .tasto.pieno:hover{background:#fff}
 button:focus-visible, .tasto:focus-visible, input:focus-visible, summary:focus-visible{outline:3px solid var(--casa); outline-offset:2px}
 button[disabled]{opacity:.45; cursor:default}
+input[type=date], select{
+  font:500 16px/1 var(--testo); color:var(--gesso); background:rgba(0,0,0,.22); border:1.5px solid var(--linea);
+  padding:10px 12px; border-radius:3px; color-scheme:dark;
+}
+.storia{margin-top:10px; padding-top:10px; border-top:1px solid var(--linea); font-size:16px; max-width:62ch}
+table.larga{max-width:none}
 input[type=text]{
   font:500 17px/1 var(--testo); color:var(--gesso); background:rgba(0,0,0,.22); border:1.5px solid var(--linea);
   padding:11px 12px; border-radius:3px; width:100%; max-width:420px;
@@ -168,6 +174,27 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
   </div>
 
   <section class="blocco">
+    <h2>Cosa dice lo storico</h2>
+    <div id="verifica"><p class="tenue">Lo storico è vuoto. Raccogli qualche giornata di partite finite qui sotto.</p></div>
+  </section>
+
+  <section class="blocco">
+    <h2>Raccogli lo storico</h2>
+    <p>Scarica momentum, tiri ed eventi delle partite finite di un giorno, per misurare quanto vale l'indice. Faccio una richiesta ogni 4 secondi circa: 50 partite richiedono una decina di minuti. Tieni questa pagina in primo piano.</p>
+    <div class="riga">
+      <input type="date" id="inData" aria-label="Giorno da raccogliere">
+      <select id="selQuante" aria-label="Quante partite">
+        <option value="20">20 partite</option>
+        <option value="50" selected>50 partite</option>
+        <option value="100">100 partite</option>
+      </select>
+      <button type="button" class="pieno" id="btnRaccogli">Raccogli</button>
+      <button type="button" id="btnFerma" hidden>Ferma la raccolta</button>
+    </div>
+    <p id="raccoltaRiga" class="tenue" style="margin-top:10px" hidden></p>
+  </section>
+
+  <section class="blocco">
     <h2>Storico e controlli</h2>
     <p id="storicoRiga" class="tenue">Storico: nessuna partita salvata.</p>
     <div class="riga">
@@ -178,11 +205,12 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
     <details style="margin-top:16px">
       <summary>Come è calcolato l'Indice Gol in questa versione</summary>
       <p><b>Cosa misura.</b> Il ritmo gol del momento rispetto al ritmo medio di una partita. 50 vuol dire ritmo medio, 100 vuol dire il doppio o più, 0 nessun pericolo.</p>
-      <p><b>Pericolo.</b> Somma dell'xG dei tiri. Ogni tiro vale la metà dopo 10 minuti, un quarto dopo 20.</p>
+      <p><b>Pericolo.</b> Somma dell'xG dei tiri. Ogni tiro vale la metà dopo 10 minuti, un quarto dopo 20. Se SofaScore non dà l'xG, lo stimo io dalla posizione del tiro: distanza dalla porta, angolo, testa o piede, tipo di azione.</p>
       <p><b>Spinta.</b> Media del momentum a favore di ciascuna squadra, dove ogni minuto vale la metà dopo 6 minuti. In più un piccolo premio se la spinta degli ultimi 5 minuti supera quella dei 10 precedenti.</p>
       <p><b>Contesto.</b> Minuto di gioco, squadra sotto o sopra di un gol, espulsioni.</p>
       <p><b>Base.</b> 2,7 gol attesi a partita, uguale per tutte: in questa versione mancano ancora le quote.</p>
-      <p><b>Limite.</b> I pesi sono provvisori, scelti da me e non ancora tarati sullo storico. La percentuale è quindi una stima da verificare, non un segnale per giocare.</p>
+      <p><b>Storico.</b> Per ogni partita finita ricalcolo l'indice a ogni minuto dal 5' all'80', usando solo i dati fino a quel minuto, e guardo se nei 10 minuti dopo è arrivato un gol.</p>
+      <p><b>Limite.</b> I pesi sono ancora provvisori, scelti da me. La tabella dello storico dice quanto valgono davvero: finché non lo conferma, la percentuale non è un segnale per giocare.</p>
     </details>
   </section>
 </div>
@@ -190,7 +218,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.1.0';
+var VERSIONE = '0.2.0';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -235,6 +263,26 @@ function leggiGraph(j) {
   return out;
 }
 
+// xG stimato da noi quando SofaScore non lo fornisce: dipende da distanza e angolo di tiro.
+// Le coordinate di SofaScore sono percentuali del campo: x = distanza dalla linea di porta, y = larghezza (50 = centro).
+function xgDaPosizione(s) {
+  var sit = String((s && s.situation) || '').toLowerCase();
+  if (sit === 'penalty') return 0.76;
+  var pc = s && s.playerCoordinates;
+  if (!pc) return null;
+  var x = num(pc.x), y = num(pc.y);
+  if (x === null || y === null) return null;
+  var dx = Math.max(x, 0.5) * 1.05, dy = (y - 50) * 0.68;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  var ang = Math.atan2(dy + 3.66, dx) - Math.atan2(dy - 3.66, dx);
+  var p = 1 / (1 + Math.exp(-(-1.6 + 1.9 * ang - 0.11 * dist)));
+  var corpo = String(s.bodyPart || '').toLowerCase();
+  if (corpo === 'head') p *= 0.65;
+  if (sit === 'fast-break') p *= 1.15;
+  if (sit === 'free-kick' || sit === 'set-piece' || sit === 'corner') p *= 0.9;
+  return clamp(p, 0.01, 0.9);
+}
+
 function leggiTiri(j) {
   var arr = (j && Array.isArray(j.shotmap)) ? j.shotmap : [];
   var out = [];
@@ -248,17 +296,21 @@ function leggiTiri(j) {
     }
     var tipo = String(s.shotType || '').toLowerCase();
     var sit = String(s.situation || '').toLowerCase();
-    var xg = num(s.xg), stimato = false;
+    var xg = num(s.xg), stimato = false, fonte = 'sofascore';
     if (xg === null) {
       stimato = true;
-      if (sit === 'penalty') xg = 0.76;
-      else if (tipo === 'goal' || tipo === 'save') xg = 0.12;
-      else if (tipo === 'post') xg = 0.10;
-      else if (tipo === 'block') xg = 0.04;
-      else xg = 0.05;
+      var xp = xgDaPosizione(s);
+      if (xp !== null) { xg = xp; fonte = 'posizione'; }
+      else {
+        fonte = 'fisso';
+        if (tipo === 'goal' || tipo === 'save') xg = 0.12;
+        else if (tipo === 'post') xg = 0.10;
+        else if (tipo === 'block') xg = 0.04;
+        else xg = 0.05;
+      }
     }
     out.push({
-      t: minutoDiGioco(time, add), casa: s.isHome === true, xg: xg, stimato: stimato,
+      t: minutoDiGioco(time, add), casa: s.isHome === true, xg: xg, stimato: stimato, fonte: fonte,
       inPorta: (tipo === 'goal' || tipo === 'save'), gol: tipo === 'goal', tipo: tipo,
       etichetta: etichettaMinuto(time, add)
     });
@@ -464,6 +516,129 @@ function leggiTotali(j) {
   return out;
 }
 
+// Valori di alcune statistiche totali, per le fotografie minuto per minuto.
+function leggiChiavi(j, chiavi) {
+  var per = (j && Array.isArray(j.statistics)) ? j.statistics : [], tutto = null, out = {};
+  for (var i = 0; i < per.length; i++) if (per[i] && per[i].period === 'ALL') { tutto = per[i]; break; }
+  if (!tutto || !Array.isArray(tutto.groups)) return out;
+  tutto.groups.forEach(function (g) {
+    (Array.isArray(g.statisticsItems) ? g.statisticsItems : []).forEach(function (it) {
+      if (!it || chiavi.indexOf(it.key) === -1 || out[it.key]) return;
+      var c = num(it.homeValue), o = num(it.awayValue);
+      if (c !== null && o !== null) out[it.key] = [c, o];
+    });
+  });
+  return out;
+}
+// Differenza fra l'ultima fotografia e quella di "larghezza" minuti prima. null = non abbastanza fotografie.
+function deltaFoto(foto, larghezza, chiave) {
+  if (!foto || foto.length < 2) return null;
+  var ult = foto[foto.length - 1];
+  if (!ult.v || !ult.v[chiave]) return null;
+  var bersaglio = ult.eff - larghezza, scelta = null;
+  for (var i = foto.length - 2; i >= 0; i--) {
+    var f = foto[i];
+    if (f.eff <= bersaglio + 1) {
+      if (f.eff >= bersaglio - 2 && f.v && f.v[chiave]) scelta = f;
+      break;
+    }
+  }
+  if (!scelta) return null;
+  return { c: Math.max(0, ult.v[chiave][0] - scelta.v[chiave][0]), o: Math.max(0, ult.v[chiave][1] - scelta.v[chiave][1]) };
+}
+
+function fasciaDi(indice) { return indice >= 75 ? 3 : indice >= 55 ? 2 : indice >= 40 ? 1 : 0; }
+var FASCE = [[0, 39, 'basso'], [40, 54, 'nella media'], [55, 74, 'sopra la media'], [75, 100, 'alto']];
+
+// Misura l'indice sulle partite finite dello storico.
+// Per ogni minuto dal 5' all'80': indice calcolato coi dati fino a quel minuto, e gol o no nei 10 minuti dopo.
+function verificaStorico(recs) {
+  var perPartita = [];
+  var xg = { sofascore: { n: 0, somma: 0, gol: 0 }, posizione: { n: 0, somma: 0, gol: 0 }, fisso: { n: 0, somma: 0, gol: 0 } };
+  (recs || []).forEach(function (r) {
+    if (!r || r.stato !== 'finished' || !r.incidents) return;
+    var ev = leggiEventi(r.incidents);
+    var d = { graph: leggiGraph(r.graph), tiri: leggiTiri(r.shotmap), gol: ev.gol, rossi: ev.rossi };
+    if (!d.graph.length && !d.tiri.length) return;
+    var riga = FASCE.map(function () { return [0, 0, 0]; });
+    for (var m = 5; m <= 80; m++) {
+      var c = calcolaMinuto(d, m), hit = 0;
+      for (var i = 0; i < d.gol.length; i++) {
+        if (d.gol[i].t > m && d.gol[i].t <= m + 10) { hit = 1; break; }
+      }
+      var k = fasciaDi(c.indice);
+      riga[k][0]++; riga[k][1] += hit; riga[k][2] += c.p10;
+    }
+    perPartita.push(riga);
+    d.tiri.forEach(function (s) {
+      var b = xg[s.fonte] || xg.fisso;
+      b.n++; b.somma += s.xg; if (s.gol) b.gol++;
+    });
+  });
+  var seme = 12345;
+  function caso() { seme = (seme * 1664525 + 1013904223) % 4294967296; return seme / 4294967296; }
+  var totN = 0, totH = 0;
+  var fasce = FASCE.map(function (f, k) {
+    var n = 0, hit = 0, sp = 0, conDati = 0;
+    perPartita.forEach(function (r) { n += r[k][0]; hit += r[k][1]; sp += r[k][2]; if (r[k][0]) conDati++; });
+    totN += n; totH += hit;
+    var lo = null, hi = null;
+    if (n > 0 && perPartita.length >= 5) {
+      var prove = [];
+      for (var b = 0; b < 300; b++) {
+        var nn = 0, hh = 0;
+        for (var j = 0; j < perPartita.length; j++) {
+          var rr = perPartita[Math.floor(caso() * perPartita.length)];
+          nn += rr[k][0]; hh += rr[k][1];
+        }
+        if (nn > 0) prove.push(hh / nn);
+      }
+      prove.sort(function (a, b2) { return a - b2; });
+      if (prove.length >= 20) {
+        lo = prove[Math.floor(prove.length * 0.05)];
+        hi = prove[Math.min(prove.length - 1, Math.floor(prove.length * 0.95))];
+      }
+    }
+    return { da: f[0], a: f[1], nome: f[2], n: n, hit: hit, freq: n ? hit / n : null, lo: lo, hi: hi, stimato: n ? sp / n : null, partite: conDati };
+  });
+  return { partite: perPartita.length, minuti: totN, base: totN ? totH / totN : null, fasce: fasce, xg: xg };
+}
+
+// Versioni leggere dei dati, per non riempire il disco.
+function snellisciTiri(j) {
+  var arr = (j && Array.isArray(j.shotmap)) ? j.shotmap : null;
+  if (!arr) return null;
+  return { shotmap: arr.map(function (s) {
+    s = s || {};
+    var o = { isHome: s.isHome, shotType: s.shotType, situation: s.situation, bodyPart: s.bodyPart, time: s.time, addedTime: s.addedTime, timeSeconds: s.timeSeconds };
+    if (s.xg !== undefined) o.xg = s.xg;
+    if (s.xgot !== undefined) o.xgot = s.xgot;
+    if (s.playerCoordinates) o.playerCoordinates = { x: s.playerCoordinates.x, y: s.playerCoordinates.y };
+    return o;
+  }) };
+}
+function snellisciEventi(j) {
+  var arr = (j && Array.isArray(j.incidents)) ? j.incidents : null;
+  if (!arr) return null;
+  var out = [];
+  arr.forEach(function (x) {
+    if (!x || (x.incidentType !== 'goal' && x.incidentType !== 'card' && x.incidentType !== 'period')) return;
+    out.push({ incidentType: x.incidentType, incidentClass: x.incidentClass, time: x.time, addedTime: x.addedTime, isHome: x.isHome, homeScore: x.homeScore, awayScore: x.awayScore, text: x.text });
+  });
+  return { incidents: out };
+}
+function snellisciScheda(ev) {
+  ev = ev || {};
+  function sq(t) { t = t || {}; return { id: t.id, name: t.name, shortName: t.shortName }; }
+  function pt(p) { p = p || {}; return { current: p.current, period1: p.period1, period2: p.period2 }; }
+  var t = ev.tournament || {}, u = t.uniqueTournament || {};
+  return { event: {
+    id: ev.id, startTimestamp: ev.startTimestamp, hasXg: ev.hasXg, status: ev.status, time: ev.time,
+    tournament: { name: t.name, category: { name: (t.category || {}).name }, uniqueTournament: { id: u.id, name: u.name } },
+    homeTeam: sq(ev.homeTeam), awayTeam: sq(ev.awayTeam), homeScore: pt(ev.homeScore), awayScore: pt(ev.awayScore)
+  } };
+}
+
 function giudizio(indice) {
   if (indice >= 75) return 'Ritmo gol alto';
   if (indice >= 55) return 'Sopra la media';
@@ -542,16 +717,20 @@ function ponteSofa(A, O) {
 // ====================== PAGINA ======================
 var ORIGINE_SOFA = 'https://www.sofascore.com';
 var GAP_MIN = 3000;       // pausa minima fra due richieste a SofaScore
-var PASSO_LIVE = 20000;   // una richiesta ogni 20 secondi mentre segui una partita
+var PASSO_LIVE = 15000;   // una richiesta ogni 15 secondi mentre segui una partita
+var PAUSA_RACCOLTA = 4000; // pausa prima di ogni richiesta durante la raccolta dello storico
 var TIMEOUT = 15000;
-var GIRO_LIVE = ['graph', 'event', 'shotmap', 'graph', 'incidents', 'statistics'];
+// In due minuti: momentum, totali e tiri due volte ciascuno; scheda ed eventi una volta.
+var GIRO_LIVE = ['graph', 'statistics', 'shotmap', 'event', 'graph', 'statistics', 'shotmap', 'incidents'];
+var CHIAVI_FOTO = ['cornerKicks', 'touchesInOppBox', 'bigChanceCreated'];
 var NOMI_DATO = { event: 'scheda', graph: 'momentum', shotmap: 'tiri', incidents: 'eventi', statistics: 'totali' };
 
 var S = {
   ponte: null, ponteOk: false, coda: [], inVolo: null, seq: 0, ultimoInvio: 0, pausaFino: 0,
   rifiuti: 0, spento: false, timeouts: 0, tPompa: null, registro: [],
-  partita: null, tLive: null, tOrologio: null, passo: 0, db: null
+  partita: null, tLive: null, tOrologio: null, passo: 0, db: null, raccolta: null, verifica: null
 };
+function attesa(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
 function el(id) { return document.getElementById(id); }
 function esc(x) {
@@ -682,10 +861,22 @@ async function aggiornaDato(tipo) {
   if (!P || P.assenti[tipo]) return;
   var r = await chiedi(percorso(tipo, P.id));
   if (S.partita !== P) return;
-  if (r.s === 200 && r.j) { P.dati[tipo] = r.j; P.agg[tipo] = Date.now(); P.errori[tipo] = null; }
+  if (r.s === 200 && r.j) {
+    P.dati[tipo] = r.j; P.agg[tipo] = Date.now(); P.errori[tipo] = null;
+    if (tipo === 'statistics') scattaFoto(P);
+  }
   else if (r.s === 404) { P.assenti[tipo] = true; P.errori[tipo] = null; }
   else { P.errori[tipo] = r.s === 0 ? 'nessuna risposta' : 'errore ' + r.s; }
   ridisegna();
+}
+function scattaFoto(P) {
+  if (statoPartita() !== 'inprogress') return;
+  var v = leggiChiavi(P.dati.statistics, CHIAVI_FOTO);
+  if (!Object.keys(v).length) return;
+  var ev = P.dati.event && P.dati.event.event;
+  var dove = minutoOra(ev, datiCalcolo(P), Date.now());
+  P.foto.push({ eff: dove.eff, ms: Date.now(), v: v });
+  if (P.foto.length > 240) P.foto.shift();
 }
 function fermaLive() {
   if (S.tLive) { clearInterval(S.tLive); S.tLive = null; }
@@ -705,7 +896,11 @@ async function caricaPartita(id) {
   fermaLive();
   avviso('');
   S.spento = false; S.passo = 0;
-  var P = S.partita = { id: String(id), dati: {}, agg: {}, errori: {}, assenti: {}, finale: false };
+  if (S.raccolta) S.raccolta.ferma = true;
+  var P = S.partita = { id: String(id), dati: {}, agg: {}, errori: {}, assenti: {}, finale: false, foto: [] };
+  var vecchia = await leggiRecord(P.id);
+  if (S.partita !== P) return;
+  if (vecchia && Array.isArray(vecchia.foto) && Date.now() - (vecchia.salvata || 0) < 3 * 3600000) P.foto = vecchia.foto;
   try { localStorage.setItem('ig-ultimo-id', P.id); } catch (e) {}
   el('elenco').hidden = true;
   el('secPartita').hidden = false;
@@ -721,7 +916,7 @@ async function caricaPartita(id) {
       return;
     }
   }
-  salvaStorico();
+  salvaStorico(statoPartita() === 'finished');
   if (statoPartita() !== 'finished') avviaLive();
 }
 function avviaLive() {
@@ -747,7 +942,7 @@ async function passoLive() {
     fermaLive();
     var tipi = ['graph', 'shotmap', 'incidents', 'statistics'];
     for (var i = 0; i < tipi.length; i++) { await aggiornaDato(tipi[i]); if (S.partita !== P) return; }
-    salvaStorico();
+    salvaStorico(true);
   }
 }
 
@@ -864,6 +1059,50 @@ function cella(c, o, formato) {
   return (c > o ? '<span class="c">' + a + '</span>' : a) + ' – ' + (o > c ? '<span class="o">' + b + '</span>' : b);
 }
 
+function rigaFoto(P, nome, chiave) {
+  function una(w) {
+    var dl = deltaFoto(P.foto, w, chiave);
+    return '<td>' + (dl ? cella(dl.c, dl.o) : '<span class="tenue">n.d.</span>') + '</td>';
+  }
+  return '<tr><td>' + nome + '</td>' + una(5) + una(10) + una(15) + '</tr>';
+}
+function migliaia(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function rigaStorico(indice) {
+  var V = S.verifica;
+  if (!V || !V.partite) return 'Storico vuoto: non posso ancora dire quante volte un indice così ha portato al gol.';
+  var f = V.fasce[fasciaDi(indice)];
+  if (V.partite < 30) return 'Storico troppo piccolo per un confronto: ' + V.partite + (V.partite === 1 ? ' partita' : ' partite') + ', ne servono almeno 30.';
+  if (!f.n || f.freq === null) return 'Nello storico non ci sono ancora minuti con indice fra ' + f.da + ' e ' + f.a + '.';
+  return 'Nello storico, con indice fra ' + f.da + ' e ' + f.a + ': gol entro 10 minuti nel ' + perc(f.freq) + ' dei casi'
+    + (f.lo !== null ? ' (fra ' + perc(f.lo) + ' e ' + perc(f.hi) + ')' : '') + ', su ' + migliaia(f.n) + ' minuti di ' + f.partite + ' partite.';
+}
+function disegnaVerifica() {
+  var V = S.verifica, box = el('verifica');
+  if (!V || !V.partite) { box.innerHTML = '<p class="tenue">Lo storico non contiene ancora partite finite con momentum o tiri. Raccogli qualche giornata qui sotto.</p>'; return; }
+  var h = '<p>' + V.partite + (V.partite === 1 ? ' partita finita' : ' partite finite') + ', ' + migliaia(V.minuti) + ' minuti osservati. In media un gol è arrivato entro 10 minuti nel <b>' + perc(V.base) + '</b> dei casi.</p>';
+  h += '<table class="larga"><thead><tr><th>Indice</th><th>Minuti osservati</th><th>Partite</th><th>Gol entro 10\' (reale)</th><th>Intervallo probabile</th><th>Stima del modello</th></tr></thead><tbody>';
+  V.fasce.forEach(function (f) {
+    h += '<tr><td>' + f.da + '–' + f.a + ', ' + f.nome + '</td><td>' + migliaia(f.n) + '</td><td>' + f.partite + '</td><td>' + (f.freq === null ? '–' : '<b>' + perc(f.freq) + '</b>')
+      + '</td><td>' + (f.lo === null ? '–' : perc(f.lo) + ' – ' + perc(f.hi)) + '</td><td>' + (f.stimato === null ? '–' : perc(f.stimato)) + '</td></tr>';
+  });
+  h += '</tbody></table>';
+  var piene = V.fasce.filter(function (f) { return f.n >= 150 && f.lo !== null; });
+  var giud;
+  if (V.partite < 30) giud = 'Con ' + V.partite + (V.partite === 1 ? ' partita' : ' partite') + ' non si può giudicare: servono almeno 30 partite per un primo segnale, 150 per fidarsi.';
+  else if (piene.length < 2) giud = 'Quasi tutti i minuti cadono nella stessa fascia: servono più partite per confrontare indice alto e indice basso.';
+  else {
+    var bassa = piene[0], alta = piene[piene.length - 1];
+    if (alta.lo > bassa.hi) giud = 'Lo storico conferma che l\'indice separa: con indice ' + alta.da + '–' + alta.a + ' il gol è arrivato nel ' + perc(alta.freq) + ' dei casi, con indice ' + bassa.da + '–' + bassa.a + ' nel ' + perc(bassa.freq) + '. Gli intervalli non si toccano.';
+    else giud = 'La differenza fra indice alto (' + perc(alta.freq) + ') e indice basso (' + perc(bassa.freq) + ') non è ancora dimostrata: gli intervalli si sovrappongono.';
+  }
+  h += '<p style="margin-top:12px"><b>' + esc(giud) + '</b></p>';
+  var xp = V.xg.posizione, xs = V.xg.sofascore;
+  if (xp.n) h += '<p class="tenue piccolo">Controllo dell\'xG stimato da me: su ' + migliaia(xp.n) + ' tiri prevede ' + dec(xp.somma, 1) + ' gol, ne sono arrivati ' + xp.gol + '.</p>';
+  if (xs.n) h += '<p class="tenue piccolo">xG di SofaScore: su ' + migliaia(xs.n) + ' tiri prevede ' + dec(xs.somma, 1) + ' gol, ne sono arrivati ' + xs.gol + '.</p>';
+  h += '<p class="tenue piccolo">Ogni minuto dal 5\' all\'80\' di ogni partita è un\'osservazione. L\'intervallo tiene conto del fatto che i minuti della stessa partita si assomigliano. Presuppone che il momentum salvato a fine partita sia lo stesso che si vedeva in diretta.</p>';
+  box.innerHTML = h;
+}
+
 function ridisegna() {
   var P = S.partita;
   if (!P) return;
@@ -896,13 +1135,15 @@ function ridisegna() {
     if (dove.stato === 'intervallo') note.push('Intervallo: i valori sono quelli di fine primo tempo.');
     if (!haGraph) note.push(P.assenti.graph ? 'Momentum non previsto per questa partita: l\'indice usa solo i tiri.' : 'Momentum non ancora letto.');
     if (!haTiri) note.push(P.assenti.shotmap ? 'Mappa dei tiri non prevista per questa partita: l\'indice usa solo il momentum.' : 'Tiri non ancora letti.');
-    if (d.tiri.some(function (s) { return s.stimato; })) note.push('SofaScore non dà l\'xG di alcuni tiri: per quelli uso un valore fisso in base all\'esito.');
-    note.push('Pesi provvisori, non ancora tarati sullo storico.');
+    if (d.tiri.some(function (s) { return s.fonte === 'posizione'; })) note.push('SofaScore non dà l\'xG di questi tiri: lo stimo io dalla posizione di ogni tiro.');
+    if (d.tiri.some(function (s) { return s.fonte === 'fisso'; })) note.push('Per alcuni tiri manca anche la posizione: uso un valore fisso.');
+    note.push('Pesi provvisori.');
     el('indiceOra').innerHTML =
       '<div class="indice"><div class="numero" style="color:' + (oraC.indice >= 75 ? 'var(--caldo)' : 'var(--gesso)') + '">' + oraC.indice + '</div>'
       + '<div class="parole"><div class="giudizio">' + giudizio(oraC.indice) + '</div>'
       + '<div class="prob">Gol nei prossimi 10 minuti: <b>' + perc(oraC.p10) + '</b> <span class="tenue">(in media, a questo minuto, ' + perc(1 - Math.exp(-10 * baseMinuto(eff))) + ')</span></div></div></div>'
-      + '<p class="tenue piccolo" style="margin-top:12px">' + esc(note.join(' ')) + '</p>';
+      + '<p class="storia">' + esc(rigaStorico(oraC.indice)) + '</p>'
+      + '<p class="tenue piccolo" style="margin-top:10px">' + esc(note.join(' ')) + '</p>';
 
     var pr = pressione(d.graph, eff, 10);
     if (pr.quotaCasa === null) {
@@ -925,7 +1166,8 @@ function ridisegna() {
         + '<tr><td>Tiri</td><td>' + cella(f5.tC, f5.tO) + '</td><td>' + cella(f10.tC, f10.tO) + '</td><td>' + cella(f15.tC, f15.tO) + '</td></tr>'
         + '<tr><td>Tiri in porta</td><td>' + cella(f5.pC, f5.pO) + '</td><td>' + cella(f10.pC, f10.pO) + '</td><td>' + cella(f15.pC, f15.pO) + '</td></tr>'
         + '<tr><td>xG</td><td>' + cella(f5.xC, f5.xO, x2) + '</td><td>' + cella(f10.xC, f10.xO, x2) + '</td><td>' + cella(f15.xC, f15.xO, x2) + '</td></tr>'
-        + '</tbody></table><p class="tenue piccolo" style="margin-top:8px">Dalla mappa dei tiri, che riporta il minuto di ogni tiro. I corner a finestra arrivano con la prossima versione.</p>';
+        + rigaFoto(P, 'Corner', 'cornerKicks') + rigaFoto(P, 'Tocchi in area avversaria', 'touchesInOppBox') + rigaFoto(P, 'Grandi occasioni', 'bigChanceCreated')
+        + '</tbody></table><p class="tenue piccolo" style="margin-top:8px">Tiri e xG vengono dalla mappa dei tiri, che riporta il minuto di ogni tiro. Corner, tocchi in area e grandi occasioni si contano solo mentre segui la partita in diretta: «n.d.» vuol dire che non la seguo da abbastanza minuti.</p>';
     }
     var xMax = Math.max(95, Math.ceil(eff) + 2);
     el('grIndice').innerHTML = svgIndice(serie, d, xMax) + '<p class="tenue piccolo" style="margin-top:6px">I pallini in alto sono i gol: giallo ' + esc(casa) + ', azzurro ' + esc(ospite) + '. Il punto arancione è adesso.</p>';
@@ -951,8 +1193,12 @@ function apriDb() {
   return new Promise(function (res) {
     try {
       if (!window.indexedDB) { res(null); return; }
-      var rq = indexedDB.open('indicegol', 1);
-      rq.onupgradeneeded = function () { rq.result.createObjectStore('partite', { keyPath: 'id' }); };
+      var rq = indexedDB.open('indicegol', 2);
+      rq.onupgradeneeded = function () {
+        var db = rq.result;
+        if (!db.objectStoreNames.contains('partite')) db.createObjectStore('partite', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('saltate')) db.createObjectStore('saltate', { keyPath: 'id' });
+      };
       rq.onsuccess = function () { res(rq.result); };
       rq.onerror = function () { res(null); };
     } catch (e) { res(null); }
@@ -967,23 +1213,116 @@ function contaStorico() {
     };
   } catch (e) {}
 }
-function salvaStorico() {
-  var P = S.partita;
-  if (!P || !S.db || !P.dati.event || (!P.dati.graph && !P.dati.shotmap)) return;
-  var ev = P.dati.event.event || {};
-  var rec = {
-    id: P.id, salvata: Date.now(), versione: VERSIONE, stato: String((ev.status && ev.status.type) || ''),
+function dbRichiesta(store, modo, fn) {
+  return new Promise(function (res) {
+    if (!S.db) { res(null); return; }
+    try {
+      var rq = fn(S.db.transaction(store, modo).objectStore(store));
+      rq.onsuccess = function () { res(rq.result); };
+      rq.onerror = function () { res(null); };
+    } catch (e) { res(null); }
+  });
+}
+function leggiRecord(id) { return dbRichiesta('partite', 'readonly', function (st) { return st.get(String(id)); }); }
+function scriviRecord(rec) { return dbRichiesta('partite', 'readwrite', function (st) { return st.put(rec); }); }
+function chiaviDi(store) {
+  return dbRichiesta(store, 'readonly', function (st) { return st.getAllKeys(); }).then(function (arr) {
+    var m = {}; (arr || []).forEach(function (k) { m[String(k)] = true; }); return m;
+  });
+}
+function creaRecord(id, schedaEv, graph, shotmap, incidents, statistics, foto) {
+  var ev = schedaEv || {};
+  return {
+    id: String(id), salvata: Date.now(), versione: VERSIONE, stato: String((ev.status && ev.status.type) || ''),
     casa: (ev.homeTeam && ev.homeTeam.name) || '', ospite: (ev.awayTeam && ev.awayTeam.name) || '',
     torneo: (ev.tournament && ev.tournament.name) || '', inizio: num(ev.startTimestamp),
-    event: P.dati.event, graph: P.dati.graph || null, shotmap: P.dati.shotmap || null,
-    incidents: P.dati.incidents || null, statistics: P.dati.statistics || null
+    event: snellisciScheda(ev), graph: graph || null, shotmap: snellisciTiri(shotmap),
+    incidents: snellisciEventi(incidents), statistics: statistics || null, foto: foto || []
   };
-  try {
-    var tx = S.db.transaction('partite', 'readwrite');
-    tx.objectStore('partite').put(rec);
-    tx.oncomplete = contaStorico;
-  } catch (e) {}
 }
+function salvaStorico(poiVerifica) {
+  var P = S.partita;
+  if (!P || !S.db || !P.dati.event || (!P.dati.graph && !P.dati.shotmap)) return;
+  var rec = creaRecord(P.id, P.dati.event.event, P.dati.graph, P.dati.shotmap, P.dati.incidents, P.dati.statistics, P.foto);
+  scriviRecord(rec).then(function () { contaStorico(); if (poiVerifica) eseguiVerifica(); });
+}
+function eseguiVerifica() {
+  return dbRichiesta('partite', 'readonly', function (st) { return st.getAll(); }).then(function (arr) {
+    S.verifica = verificaStorico(arr || []);
+    disegnaVerifica();
+    if (S.partita) ridisegna();
+  });
+}
+
+// ---------- raccolta dello storico ----------
+function raccoltaRiga(testo) {
+  var r = el('raccoltaRiga');
+  r.hidden = !testo; r.textContent = testo || '';
+}
+function fineRaccolta(testo) {
+  S.raccolta = null;
+  el('btnRaccogli').disabled = false; el('btnFerma').hidden = true;
+  raccoltaRiga(testo);
+  contaStorico();
+  eseguiVerifica();
+}
+async function raccogli() {
+  if (S.raccolta) return;
+  if (!S.ponteOk) { raccoltaRiga('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».'); return; }
+  if (!S.db) { raccoltaRiga('Lo storico non è disponibile in questo browser.'); return; }
+  if (S.tLive) { raccoltaRiga('Stai seguendo una partita in diretta. La raccolta si fa quando non segui nessuna partita, per non accumulare richieste.'); return; }
+  var data = el('inData').value, quante = Number(el('selQuante').value) || 20;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { raccoltaRiga('Scegli il giorno da raccogliere.'); return; }
+  var R = S.raccolta = { ferma: false, fatte: 0, senza: 0, totale: 0 };
+  S.spento = false;
+  el('btnRaccogli').disabled = true; el('btnFerma').hidden = false;
+  raccoltaRiga('Leggo le partite del ' + data + '…');
+  var r = await chiedi('/api/v1/sport/football/scheduled-events/' + data);
+  if (r.s !== 200 || !r.j || !Array.isArray(r.j.events)) {
+    fineRaccolta('Non sono riuscito a leggere le partite di quel giorno (' + (r.s === 0 ? 'nessuna risposta' : 'errore ' + r.s) + ').');
+    return;
+  }
+  // Gia' raccolte = solo le partite salvate come finite: una partita seguita a meta' va completata.
+  var tutte = await dbRichiesta('partite', 'readonly', function (st) { return st.getAll(); });
+  var gia = {}, salt = await chiaviDi('saltate');
+  (tutte || []).forEach(function (x) { if (x && x.stato === 'finished') gia[String(x.id)] = true; });
+  function peso(e) {
+    var u = e.tournament && e.tournament.uniqueTournament;
+    return (e.hasXg ? 2e9 : 0) + (e.hasEventPlayerStatistics ? 1e9 : 0) + (num(u && u.userCount) || 0);
+  }
+  var cand = r.j.events.filter(function (e) {
+    return e && e.id && e.status && e.status.type === 'finished' && !gia[String(e.id)] && !salt[String(e.id)];
+  });
+  cand.sort(function (a, b) { return peso(b) - peso(a); });
+  cand = cand.slice(0, quante);
+  R.totale = cand.length;
+  if (!cand.length) { fineRaccolta('Per il ' + data + ' non ci sono altre partite finite da raccogliere.'); return; }
+  var motivo = '';
+  for (var i = 0; i < cand.length; i++) {
+    if (R.ferma) { motivo = 'Raccolta fermata. '; break; }
+    if (S.spento || !S.ponteOk) { motivo = 'Raccolta interrotta: SofaScore non risponde. '; break; }
+    var e = cand[i], base = '/api/v1/event/' + e.id;
+    raccoltaRiga('Partita ' + (i + 1) + ' di ' + cand.length + ': ' + ((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + ((e.awayTeam && e.awayTeam.name) || '?')
+      + '. Salvate ' + R.fatte + ', senza momentum ' + R.senza + '.');
+    await attesa(PAUSA_RACCOLTA);
+    var g = await chiedi(base + '/graph');
+    if (g.s === 404) { await dbRichiesta('saltate', 'readwrite', function (st) { return st.put({ id: String(e.id), quando: Date.now() }); }); R.senza++; continue; }
+    if (g.s !== 200) { motivo = 'Raccolta interrotta (' + (g.s === 0 ? 'nessuna risposta' : 'errore ' + g.s) + '): non insisto. '; break; }
+    await attesa(PAUSA_RACCOLTA);
+    var t = await chiedi(base + '/shotmap');
+    if (t.s !== 200 && t.s !== 404) { motivo = 'Raccolta interrotta (' + (t.s === 0 ? 'nessuna risposta' : 'errore ' + t.s) + '): non insisto. '; break; }
+    await attesa(PAUSA_RACCOLTA);
+    var inc = await chiedi(base + '/incidents');
+    if (inc.s !== 200) {
+      if (inc.s === 404) continue;
+      motivo = 'Raccolta interrotta (' + (inc.s === 0 ? 'nessuna risposta' : 'errore ' + inc.s) + '): non insisto. '; break;
+    }
+    await scriviRecord(creaRecord(e.id, e, g.j, t.s === 200 ? t.j : null, inc.j, null, []));
+    R.fatte++;
+  }
+  fineRaccolta(motivo + 'Salvate ' + R.fatte + (R.fatte === 1 ? ' partita' : ' partite') + ' del ' + data + '; ' + R.senza + ' non avevano il momentum e non le richiederò più.');
+}
+
 function esportaStorico() {
   if (!S.db) { avviso('Storico non disponibile in questo browser.'); return; }
   try {
@@ -1004,6 +1343,8 @@ function esportaStorico() {
 // ---------- diagnostica: serve a me per correggere al primo colpo ----------
 function diagnostica() {
   var P = S.partita, out = { versione: VERSIONE, ora: new Date().toISOString(), ponte: S.ponteOk, opener: !!window.opener, richieste: S.registro };
+  if (S.verifica) out.storico = { partite: S.verifica.partite, minuti: S.verifica.minuti, base: S.verifica.base, fasce: S.verifica.fasce, xg: S.verifica.xg };
+  out.raccolta = el('raccoltaRiga').textContent || null;
   if (P) {
     var e = (P.dati.event && P.dati.event.event) || {};
     var g = (P.dati.graph && P.dati.graph.graphPoints) || [];
@@ -1018,7 +1359,7 @@ function diagnostica() {
     } catch (x) {}
     function senzaGiocatore(o) { var c = {}; Object.keys(o || {}).forEach(function (k) { if (k !== 'player' && k !== 'draw' && k !== 'goalkeeper') c[k] = o[k]; }); return c; }
     out.partita = {
-      id: P.id, assenti: P.assenti, errori: P.errori,
+      id: P.id, assenti: P.assenti, errori: P.errori, fotografie: P.foto.length, ultimaFoto: P.foto[P.foto.length - 1] || null,
       scheda: { status: e.status, time: e.time, startTimestamp: e.startTimestamp, hasXg: e.hasXg, lastPeriod: e.lastPeriod, homeScore: e.homeScore, awayScore: e.awayScore, torneo: e.tournament && e.tournament.name },
       momentum: { chiavi: Object.keys(P.dati.graph || {}), n: g.length, primi: g.slice(0, 3), ultimi: g.slice(-3), periodTime: P.dati.graph && P.dati.graph.periodTime },
       tiri: { n: t.length, primo: senzaGiocatore(t[0]), ultimo: senzaGiocatore(t[t.length - 1]) },
@@ -1060,12 +1401,16 @@ function avvio() {
     if (b) { el('inId').value = b.getAttribute('data-id'); caricaPartita(b.getAttribute('data-id')); }
   });
   el('btnEsporta').addEventListener('click', esportaStorico);
+  el('btnRaccogli').addEventListener('click', raccogli);
+  el('btnFerma').addEventListener('click', function () { if (S.raccolta) { S.raccolta.ferma = true; raccoltaRiga('Mi fermo appena finisce la richiesta in corso…'); } });
+  var ieri = new Date(Date.now() - 86400000);
+  el('inData').value = ieri.getFullYear() + '-' + ('0' + (ieri.getMonth() + 1)).slice(-2) + '-' + ('0' + ieri.getDate()).slice(-2);
   el('btnDiag').addEventListener('click', function () { copia(diagnostica(), 'Diagnostica copiata: incollala nella chat.'); });
   try { var u = localStorage.getItem('ig-ultimo-id'); if (u) el('inId').value = u; } catch (e) {}
   window.addEventListener('message', suMessaggio);
   aggiornaPonte();
   cercaPonte();
-  apriDb().then(function (db) { S.db = db; contaStorico(); });
+  apriDb().then(function (db) { S.db = db; contaStorico(); eseguiVerifica(); });
 }
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvio); else avvio();
