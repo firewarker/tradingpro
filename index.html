@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indice Gol 0.1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --campo:#0d2e24; --campo-chiaro:#113628; --gesso:#f3efe4; --gesso-tenue:rgba(243,239,228,.68);
+  --linea:rgba(243,239,228,.22); --casa:#f4c542; --ospite:#73c8ff; --caldo:#ff7a50;
+  --testo:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --stretto:"Barlow Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; color:var(--gesso); font-family:var(--testo); font-size:17px; line-height:1.45;
+  background:var(--campo);
+  background-image:repeating-linear-gradient(90deg, var(--campo) 0, var(--campo) 120px, var(--campo-chiaro) 120px, var(--campo-chiaro) 240px);
+}
+.pagina{max-width:980px; margin:0 auto; padding:0 20px 80px}
+.testa{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 24px; padding:22px 0 14px; border-bottom:2px solid var(--gesso)}
+.marchio{font-family:var(--stretto); font-weight:700; font-size:34px; line-height:1; letter-spacing:.01em}
+.marchio small{font-family:var(--testo); font-weight:400; font-size:15px; color:var(--gesso-tenue); margin-left:10px}
+.ponte{font-size:15px; display:flex; align-items:center; gap:8px}
+.ponte i{width:11px; height:11px; border-radius:50%; background:var(--caldo); display:inline-block}
+.ponte.ok i{background:#7be495}
+h2{font-family:var(--stretto); font-weight:600; font-size:25px; line-height:1.15; margin:0 0 10px}
+.blocco{padding:22px 0; border-bottom:1px solid var(--linea)}
+.tenue{color:var(--gesso-tenue)}
+.piccolo{font-size:14.5px}
+p{margin:0 0 10px; max-width:70ch}
+ol{margin:0 0 12px; padding-left:22px; max-width:70ch}
+ol li{margin-bottom:6px}
+button, .tasto{
+  font:600 16px/1 var(--testo); color:var(--gesso); background:transparent; border:1.5px solid var(--gesso);
+  padding:11px 16px; border-radius:3px; cursor:pointer; text-decoration:none; display:inline-block;
+}
+button.pieno, .tasto.pieno{background:var(--gesso); color:var(--campo)}
+button:hover, .tasto:hover{background:rgba(243,239,228,.14)}
+button.pieno:hover, .tasto.pieno:hover{background:#fff}
+button:focus-visible, .tasto:focus-visible, input:focus-visible, summary:focus-visible{outline:3px solid var(--casa); outline-offset:2px}
+button[disabled]{opacity:.45; cursor:default}
+input[type=text]{
+  font:500 17px/1 var(--testo); color:var(--gesso); background:rgba(0,0,0,.22); border:1.5px solid var(--linea);
+  padding:11px 12px; border-radius:3px; width:100%; max-width:420px;
+}
+.riga{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.avviso{margin:16px 0 0; padding:12px 14px; border-left:4px solid var(--caldo); background:rgba(0,0,0,.25); max-width:none}
+.avviso.info{border-left-color:var(--ospite)}
+.elenco{margin-top:14px; max-height:420px; overflow:auto; border-top:1px solid var(--linea)}
+.elenco button{display:grid; grid-template-columns:1fr auto; gap:2px 14px; width:100%; text-align:left; border:0; border-bottom:1px solid var(--linea); border-radius:0; padding:10px 6px; font-weight:500}
+.elenco .torneo{grid-column:1 / -1; font-size:13.5px; color:var(--gesso-tenue); font-weight:400}
+.elenco .ris{font-family:var(--stretto); font-size:20px; font-weight:600}
+.etichetta-xg{font-size:12px; border:1px solid var(--linea); border-radius:2px; padding:1px 5px; margin-left:8px; color:var(--gesso-tenue)}
+
+.tabellone{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; margin-bottom:6px}
+.squadra{font-family:var(--stretto); font-weight:600; font-size:30px; line-height:1.05}
+.squadra.casa{color:var(--casa)} .squadra.ospite{color:var(--ospite); text-align:right}
+.punteggio{font-family:var(--stretto); font-weight:700; font-size:54px; line-height:1; white-space:nowrap}
+.sotto-tabellone{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 20px; font-size:15px; color:var(--gesso-tenue)}
+
+.indice{display:grid; grid-template-columns:auto 1fr; gap:6px 26px; align-items:end; margin-top:4px}
+.indice .numero{font-family:var(--stretto); font-weight:700; font-size:128px; line-height:.82; letter-spacing:-.01em}
+.indice .parole{padding-bottom:6px}
+.indice .giudizio{font-family:var(--stretto); font-weight:600; font-size:30px; line-height:1.1}
+.indice .prob{font-size:19px; margin-top:4px}
+.indice .prob b{font-family:var(--stretto); font-size:26px; font-weight:700}
+
+.barra{display:flex; height:34px; border-radius:17px; overflow:hidden; background:rgba(0,0,0,.28); font-family:var(--stretto); font-weight:700; font-size:19px}
+.barra span{display:flex; align-items:center; min-width:0; color:var(--campo); white-space:nowrap; overflow:hidden}
+.barra .c{background:var(--casa); padding-left:12px}
+.barra .o{background:var(--ospite); justify-content:flex-end; padding-right:12px}
+.barra.vuota{align-items:center; justify-content:center; color:var(--gesso-tenue); font-family:var(--testo); font-weight:400; font-size:15px}
+.due{display:grid; grid-template-columns:1fr 1fr; gap:26px}
+table{border-collapse:collapse; width:100%; max-width:560px}
+th,td{padding:8px 10px; border-bottom:1px solid var(--linea); text-align:center; font-size:16px}
+th{font-weight:500; color:var(--gesso-tenue); font-size:14.5px}
+td:first-child, th:first-child{text-align:left; padding-left:0}
+td .c{color:var(--casa); font-weight:600} td .o{color:var(--ospite); font-weight:600}
+svg{display:block; width:100%; height:auto}
+.stat{display:grid; grid-template-columns:64px 1fr 64px; gap:4px 12px; align-items:center; margin-bottom:10px; max-width:640px}
+.stat .nome{grid-column:1 / -1; font-size:14.5px; color:var(--gesso-tenue)}
+.stat .v{font-family:var(--stretto); font-weight:600; font-size:21px}
+.stat .v.d{text-align:right}
+.stat .f{display:flex; height:8px; background:rgba(0,0,0,.28); border-radius:4px; overflow:hidden}
+.stat .f i{display:block; height:100%} .stat .f .c{background:var(--casa)} .stat .f .o{background:var(--ospite)}
+details{max-width:70ch}
+summary{cursor:pointer; font-weight:600; padding:6px 0}
+textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; background:rgba(0,0,0,.3); color:var(--gesso); border:1px solid var(--linea); padding:10px}
+[hidden]{display:none !important}
+@media (max-width:640px){
+  body{font-size:16px} .squadra{font-size:23px} .punteggio{font-size:42px}
+  .indice{grid-template-columns:1fr} .indice .numero{font-size:104px} .due{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header class="testa">
+    <div class="marchio">Indice Gol<small>versione <span id="ver"></span></small></div>
+    <div class="ponte" id="ponteStato"><i></i><span>Ponte SofaScore non collegato</span></div>
+  </header>
+
+  <section class="blocco" id="secCollega">
+    <h2>Collega SofaScore</h2>
+    <p id="avvisoFile" class="avviso" hidden>Questa pagina è aperta da un file sul computer. Il ponte funziona solo dalla pagina pubblicata su GitHub Pages: aprila da lì.</p>
+    <ol>
+      <li>Trascina il tasto qui sotto nella barra dei preferiti di Chrome. Si fa una volta sola.</li>
+      <li>Apri <b>www.sofascore.com</b> in una scheda.</li>
+      <li>In quella scheda clicca il segnalibro «Ponte Indice Gol». Questa pagina si riapre già collegata.</li>
+    </ol>
+    <div class="riga">
+      <a class="tasto pieno" id="linkPonte" href="#">Ponte Indice Gol</a>
+      <button type="button" id="btnCopiaPonte">Copia il codice del segnalibro</button>
+    </div>
+    <p class="tenue piccolo" style="margin-top:10px">Se il trascinamento non riesce: copia il codice, crea un segnalibro a mano e incollalo nel campo URL, come hai fatto per «Prova».</p>
+  </section>
+
+  <section class="blocco" id="secScegli">
+    <h2>Scegli la partita</h2>
+    <div class="riga">
+      <input type="text" id="inId" inputmode="numeric" placeholder="Id della partita, oppure l'indirizzo SofaScore" aria-label="Id della partita">
+      <button type="button" class="pieno" id="btnCarica">Carica partita</button>
+      <button type="button" id="btnLive">Mostra partite in corso</button>
+    </div>
+    <div id="avviso" class="avviso" hidden></div>
+    <div id="elenco" class="elenco" hidden></div>
+  </section>
+
+  <div id="secPartita" hidden>
+    <section class="blocco">
+      <div id="tabellone"></div>
+    </section>
+    <section class="blocco">
+      <h2>Indice Gol adesso</h2>
+      <div id="indiceOra"></div>
+    </section>
+    <section class="blocco due">
+      <div>
+        <h2>Pressione, ultimi 10 minuti</h2>
+        <div id="pressione"></div>
+      </div>
+      <div>
+        <h2>Se arriva un gol, chi lo segna</h2>
+        <div id="prossimo"></div>
+      </div>
+    </section>
+    <section class="blocco">
+      <h2>Ultimi minuti</h2>
+      <div id="finestre"></div>
+    </section>
+    <section class="blocco">
+      <h2>Indice Gol lungo la partita</h2>
+      <div id="grIndice"></div>
+    </section>
+    <section class="blocco">
+      <h2>Momentum minuto per minuto</h2>
+      <div id="grMomentum"></div>
+    </section>
+    <section class="blocco">
+      <h2>Totali della partita</h2>
+      <div id="totali"></div>
+    </section>
+  </div>
+
+  <section class="blocco">
+    <h2>Storico e controlli</h2>
+    <p id="storicoRiga" class="tenue">Storico: nessuna partita salvata.</p>
+    <div class="riga">
+      <button type="button" id="btnEsporta">Esporta lo storico su file</button>
+      <button type="button" id="btnDiag">Copia la diagnostica</button>
+    </div>
+    <textarea id="diagTesto" hidden readonly aria-label="Diagnostica"></textarea>
+    <details style="margin-top:16px">
+      <summary>Come è calcolato l'Indice Gol in questa versione</summary>
+      <p><b>Cosa misura.</b> Il ritmo gol del momento rispetto al ritmo medio di una partita. 50 vuol dire ritmo medio, 100 vuol dire il doppio o più, 0 nessun pericolo.</p>
+      <p><b>Pericolo.</b> Somma dell'xG dei tiri. Ogni tiro vale la metà dopo 10 minuti, un quarto dopo 20.</p>
+      <p><b>Spinta.</b> Media del momentum a favore di ciascuna squadra, dove ogni minuto vale la metà dopo 6 minuti. In più un piccolo premio se la spinta degli ultimi 5 minuti supera quella dei 10 precedenti.</p>
+      <p><b>Contesto.</b> Minuto di gioco, squadra sotto o sopra di un gol, espulsioni.</p>
+      <p><b>Base.</b> 2,7 gol attesi a partita, uguale per tutte: in questa versione mancano ancora le quote.</p>
+      <p><b>Limite.</b> I pesi sono provvisori, scelti da me e non ancora tarati sullo storico. La percentuale è quindi una stima da verificare, non un segnale per giocare.</p>
+    </details>
+  </section>
+</div>
+
+<script>
+'use strict';
+//<LOGICA>
+var VERSIONE = '0.1.0';
+var PESI = {
+  golMedi: 2.7,          // gol attesi a partita usati come base
+  emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
+  emivitaSpinta: 6,      // minuti dopo cui un minuto di momentum vale la meta'
+  priorMinuti: 30,       // quanto pesa la base rispetto ai tiri recenti
+  spintaRif: 0.20, spintaPeso: 0.8, spintaMin: 0.85, spintaMax: 1.5,
+  trendPeso: 0.3, trendMin: 0.9, trendMax: 1.15,
+  sottoDiUno: 1.10, sopraDiUno: 0.95,
+  inDieci: 0.70, controDieci: 1.30,
+  lamMin: 0.3, lamMax: 3.5
+};
+
+function num(x) {
+  if (x === null || x === undefined || x === '') return null;
+  var n = Number(x);
+  return isFinite(n) ? n : null;
+}
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+
+// Minuto "di gioco" usato per mettere in fila tiri ed eventi.
+// Il recupero del primo tempo sta a 45,5; quello del secondo prosegue oltre il 90.
+function minutoDiGioco(time, added) {
+  var t = time, a = added || 0;
+  if (a > 0 && a < 60) {
+    if (time <= 45) t = 45.5; else t = time + a;
+  }
+  return t;
+}
+function etichettaMinuto(time, added) {
+  var a = added || 0;
+  return (a > 0 && a < 60) ? (time + '+' + a) : String(time);
+}
+
+function leggiGraph(j) {
+  var pts = (j && Array.isArray(j.graphPoints)) ? j.graphPoints : [];
+  var out = [];
+  for (var i = 0; i < pts.length; i++) {
+    var m = num(pts[i] && pts[i].minute), v = num(pts[i] && pts[i].value);
+    if (m !== null && v !== null) out.push({ m: m, v: v });
+  }
+  out.sort(function (a, b) { return a.m - b.m; });
+  return out;
+}
+
+function leggiTiri(j) {
+  var arr = (j && Array.isArray(j.shotmap)) ? j.shotmap : [];
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    var s = arr[i] || {};
+    var time = num(s.time), add = num(s.addedTime) || 0;
+    if (time === null) {
+      var ts = num(s.timeSeconds);
+      if (ts === null) continue;
+      time = Math.max(1, Math.ceil(ts / 60));
+    }
+    var tipo = String(s.shotType || '').toLowerCase();
+    var sit = String(s.situation || '').toLowerCase();
+    var xg = num(s.xg), stimato = false;
+    if (xg === null) {
+      stimato = true;
+      if (sit === 'penalty') xg = 0.76;
+      else if (tipo === 'goal' || tipo === 'save') xg = 0.12;
+      else if (tipo === 'post') xg = 0.10;
+      else if (tipo === 'block') xg = 0.04;
+      else xg = 0.05;
+    }
+    out.push({
+      t: minutoDiGioco(time, add), casa: s.isHome === true, xg: xg, stimato: stimato,
+      inPorta: (tipo === 'goal' || tipo === 'save'), gol: tipo === 'goal', tipo: tipo,
+      etichetta: etichettaMinuto(time, add)
+    });
+  }
+  out.sort(function (a, b) { return a.t - b.t; });
+  return out;
+}
+
+function leggiEventi(j) {
+  var arr = (j && Array.isArray(j.incidents)) ? j.incidents : [];
+  var gol = [], rossi = [];
+  for (var i = 0; i < arr.length; i++) {
+    var x = arr[i] || {};
+    var tipo = String(x.incidentType || '');
+    if (tipo !== 'goal' && tipo !== 'card') continue;
+    var time = num(x.time);
+    if (time === null) continue;
+    var add = num(x.addedTime) || 0;
+    var t = minutoDiGioco(time, add);
+    if (tipo === 'goal') {
+      gol.push({ t: t, casa: x.isHome === true, h: num(x.homeScore), a: num(x.awayScore), etichetta: etichettaMinuto(time, add) });
+    } else if (/red/i.test(String(x.incidentClass || ''))) {
+      rossi.push({ t: t, casa: x.isHome === true });
+    }
+  }
+  gol.sort(function (a, b) { return a.t - b.t; });
+  rossi.sort(function (a, b) { return a.t - b.t; });
+  return { gol: gol, rossi: rossi };
+}
+
+function punteggioAl(gol, m) {
+  var h = 0, a = 0;
+  for (var i = 0; i < gol.length; i++) {
+    if (gol[i].t > m) break;
+    if (gol[i].h !== null && gol[i].a !== null) { h = gol[i].h; a = gol[i].a; }
+    else if (gol[i].casa) h++; else a++;
+  }
+  return { h: h, a: a };
+}
+
+// Ritmo gol medio al minuto m (tutte e due le squadre): cresce durante la partita.
+function baseMinuto(m) {
+  var mm = clamp(m, 0, 90);
+  return (PESI.golMedi / 90) * ((0.80 + 0.45 * mm / 90) / 1.025);
+}
+
+function spintaAl(graph, m) {
+  var H = PESI.emivitaSpinta, sw = 0, sc = 0, so = 0, n = 0;
+  var rc = 0, ro = 0, rn = 0, pc = 0, po = 0, pn = 0;
+  for (var i = 0; i < graph.length; i++) {
+    var p = graph[i];
+    if (p.m > m) break;
+    var w = Math.pow(0.5, (m - p.m) / H);
+    var c = Math.max(p.v, 0) / 100, o = Math.max(-p.v, 0) / 100;
+    sw += w; sc += w * c; so += w * o; n++;
+    if (p.m > m - 5) { rc += c; ro += o; rn++; }
+    else if (p.m > m - 15) { pc += c; po += o; pn++; }
+  }
+  var out = { c: 0, o: 0, n: n, trendC: 0, trendO: 0 };
+  if (sw > 0) { out.c = sc / sw; out.o = so / sw; }
+  if (rn >= 3 && pn >= 5) { out.trendC = rc / rn - pc / pn; out.trendO = ro / rn - po / pn; }
+  return out;
+}
+
+// d = { graph:[], tiri:[], gol:[], rossi:[] }
+function calcolaMinuto(d, m) {
+  var lam0 = baseMinuto(m) / 2;
+  var H = PESI.emivitaTiri, W = H / Math.LN2;
+  var We = W * (1 - Math.pow(0.5, Math.max(m, 0) / H));
+  var Pc = 0, Po = 0;
+  for (var i = 0; i < d.tiri.length; i++) {
+    var s = d.tiri[i];
+    if (s.t > m) break;
+    var w = Math.pow(0.5, (m - s.t) / H);
+    if (s.casa) Pc += s.xg * w; else Po += s.xg * w;
+  }
+  var lxC = (PESI.priorMinuti * lam0 + Pc) / (PESI.priorMinuti + We);
+  var lxO = (PESI.priorMinuti * lam0 + Po) / (PESI.priorMinuti + We);
+
+  var S = spintaAl(d.graph, m);
+  var mSc = 1, mSo = 1, mTc = 1, mTo = 1;
+  if (S.n >= 3) {
+    mSc = clamp(1 + PESI.spintaPeso * (S.c - PESI.spintaRif), PESI.spintaMin, PESI.spintaMax);
+    mSo = clamp(1 + PESI.spintaPeso * (S.o - PESI.spintaRif), PESI.spintaMin, PESI.spintaMax);
+    mTc = clamp(1 + PESI.trendPeso * S.trendC, PESI.trendMin, PESI.trendMax);
+    mTo = clamp(1 + PESI.trendPeso * S.trendO, PESI.trendMin, PESI.trendMax);
+  }
+
+  var pt = punteggioAl(d.gol, m), diff = pt.h - pt.a, cC = 1, cO = 1;
+  if (diff === 1) { cC *= PESI.sopraDiUno; cO *= PESI.sottoDiUno; }
+  if (diff === -1) { cC *= PESI.sottoDiUno; cO *= PESI.sopraDiUno; }
+  var rC = 0, rO = 0;
+  for (var k = 0; k < d.rossi.length; k++) {
+    if (d.rossi[k].t > m) break;
+    if (d.rossi[k].casa) rC++; else rO++;
+  }
+  if (rC > rO) { cC *= PESI.inDieci; cO *= PESI.controDieci; }
+  if (rO > rC) { cO *= PESI.inDieci; cC *= PESI.controDieci; }
+
+  var lamC = clamp(lxC * mSc * mTc * cC, PESI.lamMin * lam0, PESI.lamMax * lam0);
+  var lamO = clamp(lxO * mSo * mTo * cO, PESI.lamMin * lam0, PESI.lamMax * lam0);
+  var tot = lamC + lamO;
+  return {
+    m: m,
+    indice: clamp(Math.round(50 * tot / (PESI.golMedi / 90)), 0, 100),
+    p10: 1 - Math.exp(-10 * tot),
+    quotaCasa: tot > 0 ? lamC / tot : 0.5,
+    lamC: lamC, lamO: lamO, pericoloC: Pc, pericoloO: Po, spinta: S, punteggio: pt
+  };
+}
+
+function serieIndice(d, eff) {
+  var out = [], fine = Math.floor(eff);
+  for (var m = 1; m <= fine; m++) out.push(calcolaMinuto(d, m));
+  if (eff > fine || !out.length) out.push(calcolaMinuto(d, Math.max(eff, 0)));
+  return out;
+}
+
+function finestra(tiri, m, larghezza) {
+  var r = { tC: 0, tO: 0, pC: 0, pO: 0, xC: 0, xO: 0 };
+  for (var i = 0; i < tiri.length; i++) {
+    var s = tiri[i];
+    if (s.t > m || s.t <= m - larghezza) continue;
+    if (s.casa) { r.tC++; if (s.inPorta) r.pC++; r.xC += s.xg; }
+    else { r.tO++; if (s.inPorta) r.pO++; r.xO += s.xg; }
+  }
+  return r;
+}
+
+function pressione(graph, m, larghezza) {
+  var c = 0, o = 0, n = 0;
+  for (var i = 0; i < graph.length; i++) {
+    var p = graph[i];
+    if (p.m > m || p.m <= m - larghezza) continue;
+    c += Math.max(p.v, 0); o += Math.max(-p.v, 0); n++;
+  }
+  return { c: c, o: o, n: n, quotaCasa: (c + o) > 0 ? c / (c + o) : null };
+}
+
+// Dove siamo nella partita. eff = minuto di gioco usato per i calcoli.
+function minutoOra(ev, d, oraMs) {
+  var st = (ev && ev.status) || {};
+  var tipo = String(st.type || ''), desc = String(st.description || '');
+  var ultimo = 0;
+  if (d.graph.length) ultimo = Math.max(ultimo, d.graph[d.graph.length - 1].m);
+  if (d.tiri.length) ultimo = Math.max(ultimo, d.tiri[d.tiri.length - 1].t);
+  if (d.gol.length) ultimo = Math.max(ultimo, d.gol[d.gol.length - 1].t);
+  if (tipo === 'finished') return { eff: Math.max(90, Math.ceil(ultimo)), etichetta: 'Finita', stato: 'finita' };
+  if (tipo === 'notstarted') return { eff: 0, etichetta: 'Non ancora iniziata', stato: 'attesa' };
+  if (tipo === 'inprogress') {
+    if (/half\s?time|break|pause/i.test(desc)) return { eff: 45.5, etichetta: 'Intervallo', stato: 'intervallo' };
+    var t = (ev && ev.time) || {};
+    var cps = num(t.currentPeriodStartTimestamp), ini = num(t.initial);
+    if (cps !== null) {
+      if (ini === null) ini = /2nd/i.test(desc) ? 2700 : 0;
+      var m = Math.floor((ini + (oraMs / 1000 - cps)) / 60) + 1;
+      m = clamp(m, 1, 130);
+      if (ini < 2700) {
+        if (m > 45) return { eff: 45.5, etichetta: '45+' + Math.min(m - 45, 20), stato: 'live' };
+        return { eff: m, etichetta: m + "'", stato: 'live' };
+      }
+      m = Math.max(46, m);
+      if (m > 90 && ini < 5400) return { eff: m, etichetta: '90+' + (m - 90), stato: 'live' };
+      return { eff: m, etichetta: m + "'", stato: 'live' };
+    }
+    var c = Math.max(1, Math.ceil(ultimo));
+    return { eff: c, etichetta: 'circa ' + c + "'", stato: 'live' };
+  }
+  return { eff: Math.ceil(ultimo), etichetta: desc || 'Stato non riconosciuto', stato: 'altro' };
+}
+
+var VOCI_TOTALI = [
+  { nome: 'Possesso %', chiavi: ['ballPossession'], nomi: ['ball possession'] },
+  { nome: 'xG', chiavi: ['expectedGoals'], nomi: ['expected goals'] },
+  { nome: 'Grandi occasioni', chiavi: ['bigChanceCreated', 'bigChances'], nomi: ['big chances'] },
+  { nome: 'Tiri', chiavi: ['totalShotsOnGoal', 'totalShots'], nomi: ['total shots'] },
+  { nome: 'Tiri in porta', chiavi: ['shotsOnGoal', 'shotsOnTarget'], nomi: ['shots on target'] },
+  { nome: 'Corner', chiavi: ['cornerKicks'], nomi: ['corner kicks'] }
+];
+function leggiTotali(j) {
+  var per = (j && Array.isArray(j.statistics)) ? j.statistics : [];
+  var tutto = null;
+  for (var i = 0; i < per.length; i++) if (per[i] && per[i].period === 'ALL') { tutto = per[i]; break; }
+  if (!tutto && per.length) tutto = per[0];
+  var voci = [];
+  if (tutto && Array.isArray(tutto.groups)) {
+    tutto.groups.forEach(function (g) {
+      (Array.isArray(g.statisticsItems) ? g.statisticsItems : []).forEach(function (it) { voci.push(it); });
+    });
+  }
+  var out = [];
+  VOCI_TOTALI.forEach(function (v) {
+    var trovata = null;
+    for (var a = 0; a < voci.length && !trovata; a++) if (v.chiavi.indexOf(voci[a].key) !== -1) trovata = voci[a];
+    for (var b = 0; b < voci.length && !trovata; b++) if (v.nomi.indexOf(String(voci[b].name || '').toLowerCase()) !== -1) trovata = voci[b];
+    if (!trovata) return;
+    var c = num(trovata.homeValue), o = num(trovata.awayValue);
+    if (c === null) c = num(String(trovata.home).replace('%', ''));
+    if (o === null) o = num(String(trovata.away).replace('%', ''));
+    if (c === null || o === null) return;
+    out.push({ nome: v.nome, c: c, o: o, cTesto: String(trovata.home), oTesto: String(trovata.away) });
+  });
+  return out;
+}
+
+function giudizio(indice) {
+  if (indice >= 75) return 'Ritmo gol alto';
+  if (indice >= 55) return 'Sopra la media';
+  if (indice >= 40) return 'Nella media';
+  return 'Ritmo gol basso';
+}
+
+function leggiId(testo) {
+  var s = String(testo || '').trim();
+  var a = /#id:(\d+)/.exec(s);
+  if (a) return a[1];
+  var b = /(\d{5,})\s*$/.exec(s);
+  if (b) return b[1];
+  return null;
+}
+//</LOGICA>
+
+// ====================== PONTE (codice che gira nella scheda di SofaScore) ======================
+// Questa funzione viene trasformata in segnalibro. Non usa nulla del resto della pagina.
+function ponteSofa(A, O) {
+  if (location.hostname !== 'www.sofascore.com') {
+    alert('Indice Gol: apri prima una pagina di www.sofascore.com, poi clicca di nuovo questo segnalibro.');
+    return;
+  }
+  var P = window.__igPonte;
+  if (!P) {
+    P = window.__igPonte = { w: null, ok: false, giro: null };
+    window.addEventListener('message', function (ev) {
+      if (ev.origin !== O) return;
+      var d = ev.data;
+      if (!d || d.ig !== 1) return;
+      if (d.t === 'pronto') { P.ok = true; P.w = ev.source; return; }
+      if (d.t === 'chi') { P.w = ev.source; ev.source.postMessage({ ig: 1, t: 'ciao' }, O); return; }
+      if (d.t === 'get') {
+        var p = String(d.p || '');
+        if (p.indexOf('/api/v1/') !== 0 || p.indexOf('..') !== -1) {
+          ev.source.postMessage({ ig: 1, t: 'res', id: d.id, s: -2, b: '' }, O);
+          return;
+        }
+        fetch('https://www.sofascore.com' + p).then(function (r) {
+          return r.text().then(function (b) {
+            ev.source.postMessage({ ig: 1, t: 'res', id: d.id, s: r.status, b: b }, O);
+          });
+        }).catch(function (e) {
+          ev.source.postMessage({ ig: 1, t: 'res', id: d.id, s: -1, b: String(e) }, O);
+        });
+      }
+    });
+  }
+  var aperta = false;
+  try { aperta = !!(P.w && !P.w.closed); } catch (e1) { aperta = false; }
+  P.ok = false;
+  if (!aperta) {
+    P.w = window.open(A, 'indicegol');
+    if (!P.w) {
+      alert('Indice Gol: Chrome ha bloccato la nuova scheda. Consenti i popup per sofascore.com e clicca di nuovo il segnalibro.');
+      return;
+    }
+  } else {
+    try { P.w.focus(); } catch (e2) {}
+  }
+  if (P.giro) clearInterval(P.giro);
+  var n = 0;
+  P.giro = setInterval(function () {
+    n++;
+    if (P.ok) { clearInterval(P.giro); P.giro = null; return; }
+    if (n > 40) {
+      clearInterval(P.giro); P.giro = null;
+      alert('Indice Gol: la pagina del software non ha risposto. Controlla che si sia aperta e clicca di nuovo il segnalibro.');
+      return;
+    }
+    try { P.w.postMessage({ ig: 1, t: 'ciao' }, O); } catch (e3) {}
+  }, 500);
+}
+
+// ====================== PAGINA ======================
+var ORIGINE_SOFA = 'https://www.sofascore.com';
+var GAP_MIN = 3000;       // pausa minima fra due richieste a SofaScore
+var PASSO_LIVE = 20000;   // una richiesta ogni 20 secondi mentre segui una partita
+var TIMEOUT = 15000;
+var GIRO_LIVE = ['graph', 'event', 'shotmap', 'graph', 'incidents', 'statistics'];
+var NOMI_DATO = { event: 'scheda', graph: 'momentum', shotmap: 'tiri', incidents: 'eventi', statistics: 'totali' };
+
+var S = {
+  ponte: null, ponteOk: false, coda: [], inVolo: null, seq: 0, ultimoInvio: 0, pausaFino: 0,
+  rifiuti: 0, spento: false, timeouts: 0, tPompa: null, registro: [],
+  partita: null, tLive: null, tOrologio: null, passo: 0, db: null
+};
+
+function el(id) { return document.getElementById(id); }
+function esc(x) {
+  return String(x === null || x === undefined ? '' : x).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function ora(ms) {
+  var d = new Date(ms);
+  function z(n) { return (n < 10 ? '0' : '') + n; }
+  return z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds());
+}
+function perc(x) { return Math.round(x * 100) + '%'; }
+function dec(x, n) { return x.toFixed(n).replace('.', ','); }
+
+function avviso(testo, tipo) {
+  var a = el('avviso');
+  if (!testo) { a.hidden = true; a.textContent = ''; return; }
+  a.className = 'avviso' + (tipo === 'info' ? ' info' : '');
+  a.textContent = testo; a.hidden = false;
+}
+
+// ---------- ponte ----------
+function codicePonte() {
+  var app = location.origin + location.pathname;
+  return 'javascript:' + encodeURIComponent('(' + ponteSofa.toString() + ')(' + JSON.stringify(app) + ',' + JSON.stringify(location.origin) + ');');
+}
+function aggiornaPonte() {
+  var b = el('ponteStato');
+  b.className = 'ponte' + (S.ponteOk ? ' ok' : '');
+  b.querySelector('span').textContent = S.ponteOk ? 'Ponte SofaScore collegato' : 'Ponte SofaScore non collegato';
+  el('secCollega').hidden = S.ponteOk;
+}
+function cercaPonte() {
+  if (!window.opener) return;
+  try { window.opener.postMessage({ ig: 1, t: 'chi' }, ORIGINE_SOFA); } catch (e) {}
+}
+function suMessaggio(ev) {
+  if (ev.origin !== ORIGINE_SOFA) return;
+  var d = ev.data;
+  if (!d || d.ig !== 1) return;
+  if (d.t === 'ciao') {
+    S.ponte = ev.source; S.ponteOk = true; S.timeouts = 0;
+    try { ev.source.postMessage({ ig: 1, t: 'pronto' }, ORIGINE_SOFA); } catch (e) {}
+    aggiornaPonte();
+    if (el('avviso').dataset.ponte === '1') { avviso(''); el('avviso').dataset.ponte = ''; }
+    pompa();
+    return;
+  }
+  if (d.t === 'res') risposta(d);
+}
+function ponteCaduto() {
+  S.ponteOk = false;
+  var c = S.coda; S.coda = [];
+  c.forEach(function (it) { it.res({ s: 0 }); });
+  aggiornaPonte();
+  avviso('Il ponte con SofaScore non risponde più. Torna nella scheda di SofaScore e clicca di nuovo il segnalibro «Ponte Indice Gol».');
+  el('avviso').dataset.ponte = '1';
+}
+
+// ---------- richieste, una alla volta ----------
+function registra(p, s, ms) {
+  S.registro.push({ ora: ora(Date.now()), p: p, s: s, ms: ms });
+  if (S.registro.length > 40) S.registro.shift();
+}
+function chiedi(p) {
+  return new Promise(function (res) {
+    if (!S.ponteOk || !S.ponte) { res({ s: 0 }); return; }
+    S.coda.push({ p: p, res: res });
+    pompa();
+  });
+}
+function pompa() {
+  if (S.inVolo || !S.coda.length || !S.ponteOk || !S.ponte) return;
+  var adesso = Date.now();
+  var attesa = Math.max(S.pausaFino - adesso, S.ultimoInvio + GAP_MIN - adesso, 0);
+  if (attesa > 0) {
+    clearTimeout(S.tPompa);
+    S.tPompa = setTimeout(pompa, attesa + 20);
+    return;
+  }
+  var it = S.coda.shift(), id = ++S.seq;
+  S.inVolo = { id: id, it: it, t0: adesso, timer: setTimeout(function () { scaduta(id); }, TIMEOUT) };
+  S.ultimoInvio = adesso;
+  try { S.ponte.postMessage({ ig: 1, t: 'get', id: id, p: it.p }, ORIGINE_SOFA); }
+  catch (e) { scaduta(id); }
+}
+function scaduta(id) {
+  if (!S.inVolo || S.inVolo.id !== id) return;
+  var v = S.inVolo; S.inVolo = null;
+  clearTimeout(v.timer);
+  registra(v.it.p, 0, Date.now() - v.t0);
+  S.timeouts++;
+  v.it.res({ s: 0 });
+  if (S.timeouts >= 2) ponteCaduto(); else pompa();
+}
+function risposta(d) {
+  if (!S.inVolo || d.id !== S.inVolo.id) return;
+  var v = S.inVolo; S.inVolo = null;
+  clearTimeout(v.timer);
+  S.timeouts = 0;
+  var s = Number(d.s), j = null;
+  if (s === 200) { try { j = JSON.parse(d.b); } catch (e) { s = -3; } }
+  registra(v.it.p, s, Date.now() - v.t0);
+  if (s === 403 || s === 429) {
+    S.rifiuti++;
+    var pausa = Math.min(60000 * Math.pow(2, S.rifiuti - 1), 600000);
+    S.pausaFino = Date.now() + pausa;
+    if (S.rifiuti >= 3) {
+      S.spento = true;
+      avviso('SofaScore ha rifiutato tre richieste di fila (' + s + '). Ho fermato gli aggiornamenti: riprova più tardi con «Carica partita».');
+    } else {
+      avviso('SofaScore ha rifiutato una richiesta (' + s + '). Aspetto ' + Math.round(pausa / 60000) + ' minuti e riprovo. I dati già letti restano validi.');
+    }
+  } else if (s === 200 || s === 404) {
+    S.rifiuti = 0;
+  }
+  v.it.res({ s: s, j: j });
+  pompa();
+}
+
+// ---------- partita ----------
+function percorso(tipo, id) {
+  return '/api/v1/event/' + id + (tipo === 'event' ? '' : '/' + tipo);
+}
+async function aggiornaDato(tipo) {
+  var P = S.partita;
+  if (!P || P.assenti[tipo]) return;
+  var r = await chiedi(percorso(tipo, P.id));
+  if (S.partita !== P) return;
+  if (r.s === 200 && r.j) { P.dati[tipo] = r.j; P.agg[tipo] = Date.now(); P.errori[tipo] = null; }
+  else if (r.s === 404) { P.assenti[tipo] = true; P.errori[tipo] = null; }
+  else { P.errori[tipo] = r.s === 0 ? 'nessuna risposta' : 'errore ' + r.s; }
+  ridisegna();
+}
+function fermaLive() {
+  if (S.tLive) { clearInterval(S.tLive); S.tLive = null; }
+  if (S.tOrologio) { clearInterval(S.tOrologio); S.tOrologio = null; }
+}
+function statoPartita() {
+  var P = S.partita;
+  var ev = P && P.dati.event && P.dati.event.event;
+  return String((ev && ev.status && ev.status.type) || '');
+}
+async function caricaPartita(id) {
+  if (!S.ponteOk) {
+    avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
+    el('avviso').dataset.ponte = '1';
+    return;
+  }
+  fermaLive();
+  avviso('');
+  S.spento = false; S.passo = 0;
+  var P = S.partita = { id: String(id), dati: {}, agg: {}, errori: {}, assenti: {}, finale: false };
+  try { localStorage.setItem('ig-ultimo-id', P.id); } catch (e) {}
+  el('elenco').hidden = true;
+  el('secPartita').hidden = false;
+  ridisegna();
+  var tipi = ['event', 'graph', 'shotmap', 'incidents', 'statistics'];
+  for (var i = 0; i < tipi.length; i++) {
+    await aggiornaDato(tipi[i]);
+    if (S.partita !== P) return;
+    if (i === 0 && !P.dati.event) {
+      if (P.assenti.event) avviso('SofaScore non conosce una partita con id ' + P.id + '. Controlla il numero.');
+      else if (/403|429/.test(String(P.errori.event))) avviso('SofaScore ha rifiutato la richiesta (' + P.errori.event + '). Aspetta qualche minuto prima di riprovare: nel frattempo non insisto.');
+      else avviso('Non sono riuscito a leggere la partita ' + P.id + ' (' + (P.errori.event || 'errore') + '). Riprova fra poco.');
+      return;
+    }
+  }
+  salvaStorico();
+  if (statoPartita() !== 'finished') avviaLive();
+}
+function avviaLive() {
+  fermaLive();
+  S.tLive = setInterval(passoLive, PASSO_LIVE);
+  S.tOrologio = setInterval(ridisegna, 30000);
+}
+async function passoLive() {
+  var P = S.partita;
+  if (!P || S.spento || !S.ponteOk || S.coda.length > 1 || S.inVolo) return;
+  var stato = statoPartita(), tipo = 'event';
+  if (stato === 'inprogress') {
+    for (var k = 0; k < GIRO_LIVE.length; k++) {
+      tipo = GIRO_LIVE[S.passo % GIRO_LIVE.length]; S.passo++;
+      if (!P.assenti[tipo]) break;
+    }
+  }
+  await aggiornaDato(tipo);
+  if (S.partita !== P) return;
+  if (tipo === 'statistics') salvaStorico();
+  if (statoPartita() === 'finished' && !P.finale) {
+    P.finale = true;
+    fermaLive();
+    var tipi = ['graph', 'shotmap', 'incidents', 'statistics'];
+    for (var i = 0; i < tipi.length; i++) { await aggiornaDato(tipi[i]); if (S.partita !== P) return; }
+    salvaStorico();
+  }
+}
+
+async function mostraLive() {
+  if (!S.ponteOk) {
+    avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
+    el('avviso').dataset.ponte = '1';
+    return;
+  }
+  S.spento = false;
+  var box = el('elenco');
+  box.hidden = false;
+  box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo le partite in corso…</p>';
+  var r = await chiedi('/api/v1/sport/football/events/live');
+  if (r.s !== 200 || !r.j || !Array.isArray(r.j.events)) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">Non sono riuscito a leggere le partite in corso (' + (r.s === 0 ? 'nessuna risposta' : 'errore ' + esc(r.s)) + ').</p>';
+    return;
+  }
+  var evs = r.j.events.slice();
+  function peso(e) {
+    var u = e && e.tournament && e.tournament.uniqueTournament;
+    return (e && e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
+  }
+  evs.sort(function (a, b) { return peso(b) - peso(a); });
+  if (!evs.length) { box.innerHTML = '<p class="tenue" style="padding:10px 0">In questo momento non ci sono partite in corso.</p>'; return; }
+  var h = '';
+  evs.slice(0, 80).forEach(function (e) {
+    var t = e.tournament || {}, cat = t.category || {};
+    h += '<button type="button" data-id="' + esc(e.id) + '">'
+      + '<span class="torneo">' + esc(cat.name ? cat.name + ', ' : '') + esc(t.name) + ', ' + esc((e.status && e.status.description) || '')
+      + (e.hasXg ? '<span class="etichetta-xg">xG</span>' : '') + '</span>'
+      + '<span>' + esc((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + esc((e.awayTeam && e.awayTeam.name) || '?') + '</span>'
+      + '<span class="ris">' + esc(num(e.homeScore && e.homeScore.current) === null ? '-' : e.homeScore.current) + ' : '
+      + esc(num(e.awayScore && e.awayScore.current) === null ? '-' : e.awayScore.current) + '</span>'
+      + '</button>';
+  });
+  if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', con prima quelle che hanno l\'xG.</p>';
+  box.innerHTML = h;
+}
+
+// ---------- disegno ----------
+function datiCalcolo(P) {
+  var ev = leggiEventi(P.dati.incidents);
+  return { graph: leggiGraph(P.dati.graph), tiri: leggiTiri(P.dati.shotmap), gol: ev.gol, rossi: ev.rossi };
+}
+function rigaDati(P) {
+  var parti = [];
+  ['graph', 'shotmap', 'statistics', 'incidents'].forEach(function (t) {
+    var n = NOMI_DATO[t];
+    if (P.assenti[t]) parti.push(n + ': non previsto per questa partita');
+    else if (P.errori[t]) parti.push(n + ': ' + P.errori[t] + (P.agg[t] ? ', ultimo buono ' + ora(P.agg[t]) : ''));
+    else if (P.agg[t]) parti.push(n + ' ' + ora(P.agg[t]));
+    else parti.push(n + ': in lettura');
+  });
+  return parti.join('; ');
+}
+function assiX(xMax, L, PW, T, H) {
+  var s = '';
+  [0, 15, 30, 45, 60, 75, 90].forEach(function (m) {
+    var x = L + m / xMax * PW;
+    s += '<line x1="' + x.toFixed(1) + '" y1="' + T + '" x2="' + x.toFixed(1) + '" y2="' + (H - 24) + '" stroke="rgba(243,239,228,.12)" stroke-width="1"/>'
+      + '<text x="' + x.toFixed(1) + '" y="' + (H - 6) + '" fill="rgba(243,239,228,.68)" font-size="13" text-anchor="middle">' + m + "'</text>";
+  });
+  return s;
+}
+function svgIndice(serie, d, xMax) {
+  var Wd = 900, H = 260, L = 34, R = 14, T = 16, PW = Wd - L - R, PH = H - T - 30;
+  function x(m) { return L + m / xMax * PW; }
+  function y(v) { return T + (1 - v / 100) * PH; }
+  var s = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" role="img" aria-label="Andamento dell\'Indice Gol lungo la partita" font-family="Barlow, Arial, sans-serif">';
+  s += assiX(xMax, L, PW, T, H);
+  [0, 50, 100].forEach(function (v) {
+    s += '<line x1="' + L + '" y1="' + y(v).toFixed(1) + '" x2="' + (Wd - R) + '" y2="' + y(v).toFixed(1) + '" stroke="rgba(243,239,228,' + (v === 50 ? '.5' : '.2') + ')" stroke-width="1"' + (v === 50 ? ' stroke-dasharray="5 5"' : '') + '/>'
+      + '<text x="' + (L - 6) + '" y="' + (y(v) + 4).toFixed(1) + '" fill="rgba(243,239,228,.68)" font-size="13" text-anchor="end">' + v + '</text>';
+  });
+  s += '<text x="' + (Wd - R) + '" y="' + (y(50) - 6).toFixed(1) + '" fill="rgba(243,239,228,.68)" font-size="13" text-anchor="end">ritmo medio</text>';
+  d.gol.forEach(function (g) {
+    var col = g.casa ? '#f4c542' : '#73c8ff';
+    s += '<line x1="' + x(g.t).toFixed(1) + '" y1="' + T + '" x2="' + x(g.t).toFixed(1) + '" y2="' + (T + PH) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="3 4"/>'
+      + '<circle cx="' + x(g.t).toFixed(1) + '" cy="' + (T + 2) + '" r="6" fill="' + col + '"/>';
+  });
+  if (serie.length) {
+    var pts = serie.map(function (p) { return x(p.m).toFixed(1) + ',' + y(p.indice).toFixed(1); });
+    s += '<polygon points="' + x(serie[0].m).toFixed(1) + ',' + y(0).toFixed(1) + ' ' + pts.join(' ') + ' ' + x(serie[serie.length - 1].m).toFixed(1) + ',' + y(0).toFixed(1) + '" fill="rgba(243,239,228,.10)"/>'
+      + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#f3efe4" stroke-width="2.5" stroke-linejoin="round"/>';
+    var u = serie[serie.length - 1];
+    s += '<circle cx="' + x(u.m).toFixed(1) + '" cy="' + y(u.indice).toFixed(1) + '" r="5" fill="#ff7a50"/>';
+  }
+  return s + '</svg>';
+}
+function svgMomentum(d, xMax, casa, ospite) {
+  var Wd = 900, H = 250, L = 34, R = 14, T = 22, PW = Wd - L - R, PH = H - T - 30, mid = T + PH / 2, amp = PH / 2 - 14;
+  function x(m) { return L + m / xMax * PW; }
+  var lw = Math.max(2, PW / xMax * 0.78);
+  var s = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" role="img" aria-label="Momentum minuto per minuto" font-family="Barlow, Arial, sans-serif">';
+  s += assiX(xMax, L, PW, T, H);
+  s += '<line x1="' + L + '" y1="' + mid + '" x2="' + (Wd - R) + '" y2="' + mid + '" stroke="rgba(243,239,228,.5)" stroke-width="1"/>';
+  d.graph.forEach(function (p) {
+    var h = Math.min(Math.abs(p.v), 100) / 100 * amp;
+    if (h < 0.5) return;
+    var xx = x(p.m - 0.5) - lw / 2;
+    if (p.v > 0) s += '<rect x="' + xx.toFixed(1) + '" y="' + (mid - h).toFixed(1) + '" width="' + lw.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="#f4c542"/>';
+    else s += '<rect x="' + xx.toFixed(1) + '" y="' + mid + '" width="' + lw.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="#73c8ff"/>';
+  });
+  d.gol.forEach(function (g) {
+    s += '<circle cx="' + x(g.t).toFixed(1) + '" cy="' + (g.casa ? T - 8 : T + PH + 8 - 2) + '" r="6" fill="' + (g.casa ? '#f4c542' : '#73c8ff') + '" stroke="#0d2e24" stroke-width="1.5"/>';
+  });
+  s += '<text x="' + (L + 4) + '" y="' + (T + 10) + '" fill="#f4c542" font-size="14" font-weight="600">' + esc(casa) + '</text>'
+    + '<text x="' + (L + 4) + '" y="' + (T + PH - 2) + '" fill="#73c8ff" font-size="14" font-weight="600">' + esc(ospite) + '</text>';
+  return s + '</svg>';
+}
+function cella(c, o, formato) {
+  var a = formato ? formato(c) : String(c), b = formato ? formato(o) : String(o);
+  return (c > o ? '<span class="c">' + a + '</span>' : a) + ' – ' + (o > c ? '<span class="o">' + b + '</span>' : b);
+}
+
+function ridisegna() {
+  var P = S.partita;
+  if (!P) return;
+  var ev = (P.dati.event && P.dati.event.event) || null;
+  var casa = (ev && ev.homeTeam && (ev.homeTeam.shortName || ev.homeTeam.name)) || 'Casa';
+  var ospite = (ev && ev.awayTeam && (ev.awayTeam.shortName || ev.awayTeam.name)) || 'Ospite';
+  var d = datiCalcolo(P);
+  var dove = minutoOra(ev, d, Date.now());
+  var gh = ev ? num(ev.homeScore && ev.homeScore.current) : null, ga = ev ? num(ev.awayScore && ev.awayScore.current) : null;
+  if (gh === null || ga === null) { var pt = punteggioAl(d.gol, 999); gh = pt.h; ga = pt.a; }
+
+  el('tabellone').innerHTML =
+    '<div class="tabellone"><div class="squadra casa">' + esc(casa) + '</div><div class="punteggio">' + gh + ' : ' + ga + '</div><div class="squadra ospite">' + esc(ospite) + '</div></div>'
+    + '<div class="sotto-tabellone"><span>' + esc(ev ? (((ev.tournament && ev.tournament.name) || '') + ', ' + dove.etichetta) : 'Leggo la partita ' + P.id + '…') + '</span>'
+    + '<span>id ' + esc(P.id) + '</span></div>'
+    + '<p class="tenue piccolo" style="margin:10px 0 0; max-width:none">Dati letti: ' + esc(rigaDati(P)) + '</p>';
+
+  var haTiri = !!P.dati.shotmap, haGraph = !!P.dati.graph;
+  var eff = dove.eff;
+  if (dove.stato === 'attesa' || (!haTiri && !haGraph)) {
+    var perche = dove.stato === 'attesa' ? 'La partita non è ancora iniziata.'
+      : (P.assenti.shotmap && P.assenti.graph) ? 'SofaScore non fornisce né tiri né momentum per questa partita: l\'indice non si può calcolare. Scegli una partita di una lega maggiore.'
+      : 'Sto ancora leggendo tiri e momentum.';
+    el('indiceOra').innerHTML = '<p class="tenue">' + perche + '</p>';
+    el('pressione').innerHTML = el('prossimo').innerHTML = el('finestre').innerHTML = el('grIndice').innerHTML = el('grMomentum').innerHTML = '<p class="tenue">Niente da mostrare per ora.</p>';
+  } else {
+    var serie = serieIndice(d, eff), oraC = serie[serie.length - 1];
+    var note = [];
+    if (dove.stato === 'finita') note.push('Partita finita: i valori sono quelli dell\'ultimo minuto.');
+    if (dove.stato === 'intervallo') note.push('Intervallo: i valori sono quelli di fine primo tempo.');
+    if (!haGraph) note.push(P.assenti.graph ? 'Momentum non previsto per questa partita: l\'indice usa solo i tiri.' : 'Momentum non ancora letto.');
+    if (!haTiri) note.push(P.assenti.shotmap ? 'Mappa dei tiri non prevista per questa partita: l\'indice usa solo il momentum.' : 'Tiri non ancora letti.');
+    if (d.tiri.some(function (s) { return s.stimato; })) note.push('SofaScore non dà l\'xG di alcuni tiri: per quelli uso un valore fisso in base all\'esito.');
+    note.push('Pesi provvisori, non ancora tarati sullo storico.');
+    el('indiceOra').innerHTML =
+      '<div class="indice"><div class="numero" style="color:' + (oraC.indice >= 75 ? 'var(--caldo)' : 'var(--gesso)') + '">' + oraC.indice + '</div>'
+      + '<div class="parole"><div class="giudizio">' + giudizio(oraC.indice) + '</div>'
+      + '<div class="prob">Gol nei prossimi 10 minuti: <b>' + perc(oraC.p10) + '</b> <span class="tenue">(in media, a questo minuto, ' + perc(1 - Math.exp(-10 * baseMinuto(eff))) + ')</span></div></div></div>'
+      + '<p class="tenue piccolo" style="margin-top:12px">' + esc(note.join(' ')) + '</p>';
+
+    var pr = pressione(d.graph, eff, 10);
+    if (pr.quotaCasa === null) {
+      el('pressione').innerHTML = '<div class="barra vuota">' + (haGraph ? 'Nessuna pressione registrata negli ultimi 10 minuti' : 'Momentum non disponibile') + '</div>';
+    } else {
+      var pc = Math.round(pr.quotaCasa * 100);
+      el('pressione').innerHTML = '<div class="barra"><span class="c" style="width:' + pc + '%">' + (pc >= 12 ? pc + '%' : '') + '</span><span class="o" style="width:' + (100 - pc) + '%">' + (100 - pc >= 12 ? (100 - pc) + '%' : '') + '</span></div>'
+        + '<p class="tenue piccolo" style="margin-top:8px">' + esc(casa) + ' a sinistra, ' + esc(ospite) + ' a destra. Dal momentum di SofaScore, ' + pr.n + ' minuti letti.</p>';
+    }
+    var qc = Math.round(oraC.quotaCasa * 100);
+    el('prossimo').innerHTML = '<div class="barra"><span class="c" style="width:' + qc + '%">' + (qc >= 12 ? qc + '%' : '') + '</span><span class="o" style="width:' + (100 - qc) + '%">' + (100 - qc >= 12 ? (100 - qc) + '%' : '') + '</span></div>'
+      + '<p class="tenue piccolo" style="margin-top:8px">Quota del ritmo gol di ciascuna squadra. Stima provvisoria.</p>';
+
+    if (!haTiri) {
+      el('finestre').innerHTML = '<p class="tenue">' + (P.assenti.shotmap ? 'SofaScore non fornisce la mappa dei tiri per questa partita.' : 'Tiri non ancora letti.') + '</p>';
+    } else {
+      var f5 = finestra(d.tiri, eff, 5), f10 = finestra(d.tiri, eff, 10), f15 = finestra(d.tiri, eff, 15);
+      var x2 = function (v) { return dec(v, 2); };
+      el('finestre').innerHTML = '<table><thead><tr><th>' + esc(casa) + ' – ' + esc(ospite) + '</th><th>Ultimi 5\'</th><th>Ultimi 10\'</th><th>Ultimi 15\'</th></tr></thead><tbody>'
+        + '<tr><td>Tiri</td><td>' + cella(f5.tC, f5.tO) + '</td><td>' + cella(f10.tC, f10.tO) + '</td><td>' + cella(f15.tC, f15.tO) + '</td></tr>'
+        + '<tr><td>Tiri in porta</td><td>' + cella(f5.pC, f5.pO) + '</td><td>' + cella(f10.pC, f10.pO) + '</td><td>' + cella(f15.pC, f15.pO) + '</td></tr>'
+        + '<tr><td>xG</td><td>' + cella(f5.xC, f5.xO, x2) + '</td><td>' + cella(f10.xC, f10.xO, x2) + '</td><td>' + cella(f15.xC, f15.xO, x2) + '</td></tr>'
+        + '</tbody></table><p class="tenue piccolo" style="margin-top:8px">Dalla mappa dei tiri, che riporta il minuto di ogni tiro. I corner a finestra arrivano con la prossima versione.</p>';
+    }
+    var xMax = Math.max(95, Math.ceil(eff) + 2);
+    el('grIndice').innerHTML = svgIndice(serie, d, xMax) + '<p class="tenue piccolo" style="margin-top:6px">I pallini in alto sono i gol: giallo ' + esc(casa) + ', azzurro ' + esc(ospite) + '. Il punto arancione è adesso.</p>';
+    el('grMomentum').innerHTML = haGraph ? svgMomentum(d, xMax, casa, ospite)
+      : '<p class="tenue">' + (P.assenti.graph ? 'SofaScore non fornisce il momentum per questa partita.' : 'Momentum non ancora letto.') + '</p>';
+  }
+
+  var tot = leggiTotali(P.dati.statistics);
+  if (!tot.length) {
+    el('totali').innerHTML = '<p class="tenue">' + (P.assenti.statistics ? 'SofaScore non fornisce le statistiche per questa partita.' : P.dati.statistics ? 'Nessuna delle statistiche attese è presente.' : 'Statistiche non ancora lette.') + '</p>';
+  } else {
+    el('totali').innerHTML = tot.map(function (v) {
+      var somma = v.c + v.o, pc2 = somma > 0 ? v.c / somma * 100 : 50;
+      return '<div class="stat"><span class="nome">' + esc(v.nome) + '</span><span class="v">' + esc(v.cTesto) + '</span>'
+        + '<span class="f"><i class="c" style="width:' + pc2.toFixed(1) + '%"></i><i class="o" style="width:' + (100 - pc2).toFixed(1) + '%"></i></span>'
+        + '<span class="v d">' + esc(v.oTesto) + '</span></div>';
+    }).join('');
+  }
+}
+
+// ---------- storico (resta su questo computer) ----------
+function apriDb() {
+  return new Promise(function (res) {
+    try {
+      if (!window.indexedDB) { res(null); return; }
+      var rq = indexedDB.open('indicegol', 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore('partite', { keyPath: 'id' }); };
+      rq.onsuccess = function () { res(rq.result); };
+      rq.onerror = function () { res(null); };
+    } catch (e) { res(null); }
+  });
+}
+function contaStorico() {
+  if (!S.db) { el('storicoRiga').textContent = 'Storico non disponibile in questo browser.'; return; }
+  try {
+    var rq = S.db.transaction('partite').objectStore('partite').count();
+    rq.onsuccess = function () {
+      el('storicoRiga').textContent = rq.result ? 'Storico: ' + rq.result + (rq.result === 1 ? ' partita salvata' : ' partite salvate') + ' su questo computer.' : 'Storico: nessuna partita salvata.';
+    };
+  } catch (e) {}
+}
+function salvaStorico() {
+  var P = S.partita;
+  if (!P || !S.db || !P.dati.event || (!P.dati.graph && !P.dati.shotmap)) return;
+  var ev = P.dati.event.event || {};
+  var rec = {
+    id: P.id, salvata: Date.now(), versione: VERSIONE, stato: String((ev.status && ev.status.type) || ''),
+    casa: (ev.homeTeam && ev.homeTeam.name) || '', ospite: (ev.awayTeam && ev.awayTeam.name) || '',
+    torneo: (ev.tournament && ev.tournament.name) || '', inizio: num(ev.startTimestamp),
+    event: P.dati.event, graph: P.dati.graph || null, shotmap: P.dati.shotmap || null,
+    incidents: P.dati.incidents || null, statistics: P.dati.statistics || null
+  };
+  try {
+    var tx = S.db.transaction('partite', 'readwrite');
+    tx.objectStore('partite').put(rec);
+    tx.oncomplete = contaStorico;
+  } catch (e) {}
+}
+function esportaStorico() {
+  if (!S.db) { avviso('Storico non disponibile in questo browser.'); return; }
+  try {
+    var rq = S.db.transaction('partite').objectStore('partite').getAll();
+    rq.onsuccess = function () {
+      var arr = rq.result || [];
+      if (!arr.length) { avviso('Lo storico è vuoto: carica almeno una partita.', 'info'); return; }
+      var blob = new Blob([JSON.stringify({ app: 'indice-gol', versione: VERSIONE, esportato: new Date().toISOString(), partite: arr })], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'indice-gol-storico-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    };
+  } catch (e) { avviso('Non sono riuscito a esportare lo storico.'); }
+}
+
+// ---------- diagnostica: serve a me per correggere al primo colpo ----------
+function diagnostica() {
+  var P = S.partita, out = { versione: VERSIONE, ora: new Date().toISOString(), ponte: S.ponteOk, opener: !!window.opener, richieste: S.registro };
+  if (P) {
+    var e = (P.dati.event && P.dati.event.event) || {};
+    var g = (P.dati.graph && P.dati.graph.graphPoints) || [];
+    var t = (P.dati.shotmap && P.dati.shotmap.shotmap) || [];
+    var inc = (P.dati.incidents && P.dati.incidents.incidents) || [];
+    var voci = [];
+    try {
+      (P.dati.statistics.statistics || []).forEach(function (per) {
+        if (per.period !== 'ALL') return;
+        (per.groups || []).forEach(function (gr) { (gr.statisticsItems || []).forEach(function (it) { voci.push(it.key + '|' + it.name + '|' + it.home + '|' + it.away); }); });
+      });
+    } catch (x) {}
+    function senzaGiocatore(o) { var c = {}; Object.keys(o || {}).forEach(function (k) { if (k !== 'player' && k !== 'draw' && k !== 'goalkeeper') c[k] = o[k]; }); return c; }
+    out.partita = {
+      id: P.id, assenti: P.assenti, errori: P.errori,
+      scheda: { status: e.status, time: e.time, startTimestamp: e.startTimestamp, hasXg: e.hasXg, lastPeriod: e.lastPeriod, homeScore: e.homeScore, awayScore: e.awayScore, torneo: e.tournament && e.tournament.name },
+      momentum: { chiavi: Object.keys(P.dati.graph || {}), n: g.length, primi: g.slice(0, 3), ultimi: g.slice(-3), periodTime: P.dati.graph && P.dati.graph.periodTime },
+      tiri: { n: t.length, primo: senzaGiocatore(t[0]), ultimo: senzaGiocatore(t[t.length - 1]) },
+      eventi: inc.slice(0, 8).map(function (i) { return { incidentType: i.incidentType, incidentClass: i.incidentClass, time: i.time, addedTime: i.addedTime, isHome: i.isHome, homeScore: i.homeScore, awayScore: i.awayScore }; }),
+      totali: voci
+    };
+  }
+  return JSON.stringify(out, null, 1);
+}
+function copia(testo, fatto) {
+  function ripiego() {
+    var ta = el('diagTesto'); ta.hidden = false; ta.value = testo; ta.focus(); ta.select();
+    avviso('Non ho potuto copiare da solo: il testo è selezionato qui sotto, premi Comando + C.', 'info');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(testo).then(function () { avviso(fatto, 'info'); }, ripiego);
+  } else { ripiego(); }
+}
+
+// ---------- avvio ----------
+function avvio() {
+  el('ver').textContent = VERSIONE;
+  if (location.protocol === 'file:') el('avvisoFile').hidden = false;
+  el('linkPonte').setAttribute('href', codicePonte());
+  el('linkPonte').addEventListener('click', function (e) {
+    e.preventDefault();
+    avviso('Questo tasto va trascinato nella barra dei preferiti e cliccato quando sei su www.sofascore.com, non qui.', 'info');
+  });
+  el('btnCopiaPonte').addEventListener('click', function () { copia(codicePonte(), 'Codice del segnalibro copiato. Incollalo nel campo URL di un nuovo segnalibro.'); });
+  el('btnCarica').addEventListener('click', function () {
+    var id = leggiId(el('inId').value);
+    if (!id) { avviso('Scrivi l\'id della partita (il numero dopo #id: nell\'indirizzo di SofaScore) oppure incolla tutto l\'indirizzo.'); return; }
+    caricaPartita(id);
+  });
+  el('inId').addEventListener('keydown', function (e) { if (e.key === 'Enter') el('btnCarica').click(); });
+  el('btnLive').addEventListener('click', mostraLive);
+  el('elenco').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-id]') : null;
+    if (b) { el('inId').value = b.getAttribute('data-id'); caricaPartita(b.getAttribute('data-id')); }
+  });
+  el('btnEsporta').addEventListener('click', esportaStorico);
+  el('btnDiag').addEventListener('click', function () { copia(diagnostica(), 'Diagnostica copiata: incollala nella chat.'); });
+  try { var u = localStorage.getItem('ig-ultimo-id'); if (u) el('inId').value = u; } catch (e) {}
+  window.addEventListener('message', suMessaggio);
+  aggiornaPonte();
+  cercaPonte();
+  apriDb().then(function (db) { S.db = db; contaStorico(); });
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvio); else avvio();
+}
+</script>
+</body>
+</html>
