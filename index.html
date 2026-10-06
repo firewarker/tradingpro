@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.4.0</title>
+<title>Indice Gol 0.4.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -260,7 +260,7 @@ textarea{width:100%; height:180px; font:13px/1.4 Menlo,Consolas,monospace; backg
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.4.0';
+var VERSIONE = '0.4.1';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -1154,8 +1154,21 @@ var NOMI_DATO = { event: 'scheda', graph: 'momentum', shotmap: 'tiri', incidents
 var S = {
   ponte: null, ponteOk: false, coda: [], inVolo: null, seq: 0, ultimoInvio: 0, pausaFino: 0,
   rifiuti: 0, spento: false, timeouts: 0, tPompa: null, registro: [],
-  partita: null, tLive: null, tOrologio: null, passo: 0, db: null, raccolta: null, verifica: null
+  partita: null, tLive: null, tOrologio: null, passo: 0, db: null, raccolta: null, verifica: null,
+  memoria: {},      // partite gia' aperte in questa sessione: riaprirle non costa richieste
+  cache: {},        // risposte che cambiano di rado (ultime partite di una squadra, quote)
+  giorni: {},       // elenchi del giorno gia' letti
+  elencoPronto: false
 };
+// Come chiedi(), ma se la stessa risposta buona e' gia' arrivata da poco la riusa. Gli errori non si conservano mai.
+function chiediCache(p, durata) {
+  var c = S.cache[p];
+  if (c && Date.now() - c.quando < durata) return Promise.resolve({ s: 200, j: c.j, daMemoria: true });
+  return chiedi(p).then(function (r) {
+    if (r.s === 200 && r.j) S.cache[p] = { j: r.j, quando: Date.now() };
+    return r;
+  });
+}
 function attesa(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
 function el(id) { return document.getElementById(id); }
@@ -1331,7 +1344,25 @@ async function caricaPartita(id) {
   avviso('');
   S.spento = false; S.passo = 0;
   if (S.raccolta) S.raccolta.ferma = true;
-  var P = S.partita = { id: String(id), dati: {}, agg: {}, errori: {}, assenti: {}, finale: false, foto: [] };
+  var nota = S.memoria[String(id)];
+  if (nota && nota.completa && nota.dati.event && Date.now() - nota.aperta < 45 * 60000) {
+    // gia' aperta da poco: la rimetto com'era, senza nuove richieste; se non e' finita riparte l'aggiornamento
+    S.partita = nota;
+    try { localStorage.setItem('ig-ultimo-id', nota.id); } catch (e0) {}
+    el('elenco').hidden = true;
+    el('secPartita').hidden = false;
+    el('pre').innerHTML = '';
+    ridisegna();
+    if (statoPartita() !== 'finished') avviaLive();
+    return;
+  }
+  var P = S.partita = { id: String(id), dati: {}, agg: {}, errori: {}, assenti: {}, finale: false, foto: [], aperta: Date.now() };
+  S.memoria[P.id] = P;
+  var chiaviMem = Object.keys(S.memoria);
+  if (chiaviMem.length > 25) {
+    chiaviMem.sort(function (a, b) { return S.memoria[a].aperta - S.memoria[b].aperta; });
+    delete S.memoria[chiaviMem[0]];
+  }
   var vecchia = await leggiRecord(P.id);
   if (S.partita !== P) return;
   if (vecchia && Array.isArray(vecchia.foto) && Date.now() - (vecchia.salvata || 0) < 3 * 3600000) P.foto = vecchia.foto;
@@ -1351,6 +1382,7 @@ async function caricaPartita(id) {
   if (statoPartita() === 'notstarted') {
     await analizzaPre();
     if (S.partita !== P) return;
+    P.completa = true;
     avviaLive();
     return;
   }
@@ -1359,6 +1391,7 @@ async function caricaPartita(id) {
     await aggiornaDato(tipi[i]);
     if (S.partita !== P) return;
   }
+  P.completa = true;
   salvaStorico(statoPartita() === 'finished');
   if (statoPartita() !== 'finished') avviaLive();
 }
@@ -1372,9 +1405,9 @@ async function analizzaPre() {
   if (!idH || !idA) { P.pre = { mano: mano, errore: 'SofaScore non indica le due squadre di questa partita.' }; ridisegna(); return; }
   P.pre = { inCorso: true, mano: mano };
   ridisegna();
-  var rH = await chiedi('/api/v1/team/' + idH + '/events/last/0'); if (S.partita !== P) return;
-  var rA = await chiedi('/api/v1/team/' + idA + '/events/last/0'); if (S.partita !== P) return;
-  var rQ = await chiedi('/api/v1/event/' + P.id + '/odds/1/all'); if (S.partita !== P) return;
+  var rH = await chiediCache('/api/v1/team/' + idH + '/events/last/0', 6 * 3600000); if (S.partita !== P) return;
+  var rA = await chiediCache('/api/v1/team/' + idA + '/events/last/0', 6 * 3600000); if (S.partita !== P) return;
+  var rQ = await chiediCache('/api/v1/event/' + P.id + '/odds/1/all', 10 * 60000); if (S.partita !== P) return;
   var X = { mano: mano, quando: Date.now(), stati: { casa: rH.s, ospite: rA.s, quote: rQ.s }, grezzo: { casa: rH.j, ospite: rA.j, quote: rQ.j } };
   function perche(s) { return s === 0 ? 'nessuna risposta' : 'errore ' + s; }
   if (rH.s !== 200 || rA.s !== 200) {
@@ -1522,6 +1555,7 @@ async function mostraLive() {
   }
   var evs = r.j.events.slice();
   accoda(evs);
+  imparaTornei(evs);
   function peso(e) {
     var u = e && e.tournament && e.tournament.uniqueTournament;
     return (e && e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
@@ -1541,44 +1575,81 @@ async function mostraLive() {
   });
   if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', con prima quelle che hanno l\'xG.</p>';
   box.innerHTML = h;
+  S.elencoPronto = true;
 }
 
-// Nazioni ("categorie") di SofaScore confermate dalle sue risposte: Italia, Inghilterra, Spagna, Germania, Francia, Europa, Mondo, Olanda.
-var CATEGORIE_NOTE = [31, 1, 32, 30, 7, 1465, 1468, 35];
-// Elenco delle partite di un giorno. SofaScore ha piu' di un indirizzo per questo e li cambia: li provo in ordine.
-//  1) elenco unico del giorno;  2) elenco delle nazioni di quel giorno, poi le partite nazione per nazione;
-//  3) se manca anche l'elenco delle nazioni, le otto nazioni principali.
-async function partiteDelGiorno(data, maxNazioni, avanza) {
+// Tornei principali con il loro numero SofaScore, presi da una risposta vera del sito, dal piu' seguito al meno seguito.
+var TORNEI_NOTI = [[16, 1955859], [17, 1245207], [7, 1158557], [8, 885931], [1, 667586], [23, 661845], [35, 537132], [357, 524577], [34, 447772], [679, 434346],
+  [10783, 318715], [17015, 229245], [11, 201718], [19, 182434], [329, 174419], [37, 160979], [27, 135108], [465, 109005], [328, 105567], [341, 43586], [53, 37090]];
+// Ogni elenco di partite in corso mi insegna altri tornei: li ricordo su questo computer.
+function torneiAppresi() {
+  try { return JSON.parse(localStorage.getItem('ig-tornei') || '{}') || {}; } catch (e) { return {}; }
+}
+function imparaTornei(evs) {
+  var m = torneiAppresi(), nuovo = false;
+  (evs || []).forEach(function (e) {
+    var u = e && e.tournament && e.tournament.uniqueTournament;
+    if (!u || u.id === undefined || u.id === null) return;
+    var seg = num(u.userCount) || 0;
+    if (m[u.id] === undefined || m[u.id] < seg) { m[u.id] = seg; nuovo = true; }
+  });
+  if (!nuovo) return;
+  var ch = Object.keys(m);
+  if (ch.length > 250) { ch.sort(function (a, b) { return m[b] - m[a]; }); ch.slice(250).forEach(function (k) { delete m[k]; }); }
+  try { localStorage.setItem('ig-tornei', JSON.stringify(m)); } catch (e) {}
+}
+function torneiConosciuti() {
+  var m = torneiAppresi();
+  TORNEI_NOTI.forEach(function (t) { if (m[t[0]] === undefined || m[t[0]] < t[1]) m[t[0]] = t[1]; });
+  return Object.keys(m).sort(function (a, b) { return m[b] - m[a]; });
+}
+// Elenco delle partite di un giorno. Provo in ordine:
+//  1) l'elenco unico del giorno (oggi SofaScore risponde 404: lo ricordo e non lo riprovo);
+//  2) torneo per torneo, con l'indirizzo che usa il sito: /unique-tournament/NUMERO/scheduled-events/DATA.
+//     I tornei li prendo dall'elenco delle nazioni del giorno se SofaScore lo da', altrimenti da quelli che conosco.
+async function partiteDelGiorno(data, maxTornei, avanza, rileggi) {
+  var oggi = new Date(), oggiTxt = oggi.getFullYear() + '-' + ('0' + (oggi.getMonth() + 1)).slice(-2) + '-' + ('0' + oggi.getDate()).slice(-2);
+  var mem = S.giorni[data];
+  if (!rileggi && mem && Date.now() - mem.quando < (data >= oggiTxt ? 20 * 60000 : 12 * 3600000)) return { s: 200, events: mem.events, quando: mem.quando, daMemoria: true };
   var info = S.giornoInfo = { data: data, metodo: null, tentativi: [] };
-  var ricordo = null;
-  try { ricordo = localStorage.getItem('ig-metodo-giorno'); } catch (e) {}
-  function nota(p, s) { info.tentativi.push(p.replace('/api/v1/', '') + ' -> ' + s); }
-  function ricorda(m) { info.metodo = m; try { localStorage.setItem('ig-metodo-giorno', m); } catch (e) {} }
-  if (ricordo !== 'nazioni') {
+  function leggi(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function scrivi(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function nota(p, s) { if (info.tentativi.length < 60) info.tentativi.push(p.replace('/api/v1/', '') + ' -> ' + s); }
+  function fine(events, metodo) { info.metodo = metodo; S.giorni[data] = { events: events, quando: Date.now() }; return { s: 200, events: events, quando: Date.now() }; }
+  if (leggi('ig-metodo-giorno') !== 'tornei') {
     var p1 = '/api/v1/sport/football/scheduled-events/' + data, r1 = await chiedi(p1);
     nota(p1, r1.s);
-    if (r1.s === 200 && r1.j && Array.isArray(r1.j.events)) { ricorda('unico'); return { s: 200, events: r1.j.events }; }
+    if (r1.s === 200 && r1.j && Array.isArray(r1.j.events)) { scrivi('ig-metodo-giorno', 'unico'); return fine(r1.j.events, 'unico'); }
     if (r1.s !== 404) return { s: r1.s };
   }
-  var scarto = -new Date().getTimezoneOffset() * 60, nazioni = [];
-  var p2 = '/api/v1/sport/football/' + data + '/' + scarto + '/categories', r2 = await chiedi(p2);
-  nota(p2, r2.s);
-  if (r2.s === 200 && r2.j && Array.isArray(r2.j.categories)) {
-    nazioni = r2.j.categories.map(function (c) {
-      return { id: c && c.category && c.category.id, peso: (num(c && c.totalEventPlayerStatistics) || 0) * 1000 + (num(c && c.totalEvents) || 0) };
-    }).filter(function (c) { return c.id !== undefined && c.id !== null; });
-    nazioni.sort(function (a, b) { return b.peso - a.peso; });
-    nazioni = nazioni.map(function (c) { return c.id; });
-  } else if (r2.s !== 404 && r2.s !== 200) {
-    return { s: r2.s };
+  var ids = [];
+  if (leggi('ig-nazioni') !== 'no') {
+    var scarto = -new Date().getTimezoneOffset() * 60;
+    var p2 = '/api/v1/sport/football/' + data + '/' + scarto + '/categories', r2 = await chiedi(p2);
+    nota(p2, r2.s);
+    if (r2.s === 200 && r2.j && Array.isArray(r2.j.categories)) {
+      var cats = r2.j.categories.slice();
+      cats.sort(function (a, b) {
+        return ((num(b && b.totalEventPlayerStatistics) || 0) * 1000 + (num(b && b.totalEvents) || 0)) - ((num(a && a.totalEventPlayerStatistics) || 0) * 1000 + (num(a && a.totalEvents) || 0));
+      });
+      var gia = {};
+      cats.forEach(function (c) {
+        (Array.isArray(c && c.uniqueTournamentIds) ? c.uniqueTournamentIds : []).forEach(function (t) { if (!gia[t]) { gia[t] = true; ids.push(t); } });
+      });
+    } else if (r2.s === 404) {
+      scrivi('ig-nazioni', 'no');
+    } else if (r2.s === 403 || r2.s === 429 || r2.s === 0) {
+      return { s: r2.s };
+    }
   }
-  if (!nazioni.length) nazioni = CATEGORIE_NOTE.slice();
-  nazioni = nazioni.slice(0, maxNazioni);
+  var daNazioni = ids.length > 0;
+  if (!ids.length) ids = torneiConosciuti();
+  ids = ids.slice(0, maxTornei);
   var visti = {}, out = [], buone = 0, errore = 404;
-  for (var i = 0; i < nazioni.length; i++) {
+  for (var i = 0; i < ids.length; i++) {
     if (S.raccolta && S.raccolta.ferma) break;
-    if (avanza) avanza(i + 1, nazioni.length);
-    var p3 = '/api/v1/category/' + nazioni[i] + '/scheduled-events/' + data, r3 = await chiedi(p3);
+    if (avanza) avanza(i + 1, ids.length);
+    var p3 = '/api/v1/unique-tournament/' + ids[i] + '/scheduled-events/' + data, r3 = await chiedi(p3);
     nota(p3, r3.s);
     if (r3.s === 200 && r3.j && Array.isArray(r3.j.events)) {
       buone++;
@@ -1588,16 +1659,17 @@ async function partiteDelGiorno(data, maxNazioni, avanza) {
       if (r3.s === 403 || r3.s === 429 || r3.s === 0) break;
     }
   }
-  if (!buone) return { s: errore };
-  ricorda('nazioni');
-  return { s: 200, events: out };
+  if (!buone) return { s: errore, tornei: true };
+  scrivi('ig-metodo-giorno', 'tornei');
+  imparaTornei(out);
+  return fine(out, daNazioni ? 'tornei del giorno' : 'tornei che conosco');
 }
 function erroreGiorno(s) {
-  if (s === 404) return 'SofaScore non risponde a nessuno degli indirizzi che conosco per l\'elenco del giorno (errore 404). Intanto puoi incollare l\'indirizzo di una partita nel campo in alto. Premi «Copia la diagnostica» e mandamela: lo sistemo.';
+  if (s === 404) return 'Nessuno dei tornei che conosco ha partite quel giorno, oppure SofaScore ha cambiato indirizzo. Premi «Mostra partite in corso» quando si gioca: imparo così altri tornei. Puoi sempre incollare l\'indirizzo di una partita nel campo in alto.';
   return 'Non sono riuscito a leggere le partite di quel giorno (' + (s === 0 ? 'nessuna risposta' : 'errore ' + s) + ').';
 }
 
-async function mostraOggi() {
+async function mostraOggi(rileggi) {
   if (!S.ponteOk) {
     avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
     el('avviso').dataset.ponte = '1';
@@ -1608,9 +1680,9 @@ async function mostraOggi() {
   var giorno = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   box.hidden = false;
   box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo le partite di oggi…</p>';
-  var r = await partiteDelGiorno(giorno, 12, function (i, n) {
-    box.innerHTML = '<p class="tenue" style="padding:10px 0">SofaScore dà le partite nazione per nazione: leggo la ' + i + ' di ' + n + '…</p>';
-  });
+  var r = await partiteDelGiorno(giorno, 25, function (i, n) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">SofaScore dà le partite torneo per torneo: leggo il ' + i + ' di ' + n + '. Serve circa un minuto, poi l\'elenco resta in memoria.</p>';
+  }, rileggi === true);
   if (r.s !== 200) {
     box.innerHTML = '<p class="tenue" style="padding:10px 0">' + esc(erroreGiorno(r.s)) + '</p>';
     return;
@@ -1621,8 +1693,9 @@ async function mostraOggi() {
     return (e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
   }
   evs.sort(function (a, b) { return peso(b) - peso(a); });
-  if (!evs.length) { box.innerHTML = '<p class="tenue" style="padding:10px 0">Oggi non ci sono altre partite da giocare.</p>'; return; }
-  var h = '';
+  var testa = '<div class="riga" style="padding:10px 0; justify-content:space-between"><span class="tenue piccolo">Elenco letto alle ' + ora(r.quando || Date.now()).slice(0, 5) + '.</span><button type="button" data-azione="rileggi" style="width:auto; border:1.5px solid var(--gesso); border-radius:3px; padding:8px 12px; display:inline-block">Rileggi l\'elenco</button></div>';
+  if (!evs.length) { box.innerHTML = testa + '<p class="tenue" style="padding:10px 0">Nei tornei che conosco oggi non ci sono altre partite da giocare.</p>'; S.elencoPronto = true; return; }
+  var h = testa;
   evs.slice(0, 80).forEach(function (e) {
     var t = e.tournament || {}, cat = t.category || {}, quando = num(e.startTimestamp), hh = '';
     if (quando !== null) { var dd = new Date(quando * 1000); hh = ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2); }
@@ -1633,6 +1706,7 @@ async function mostraOggi() {
   });
   if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', dalle più seguite.</p>';
   box.innerHTML = h;
+  S.elencoPronto = true;
 }
 
 // ---------- disegno ----------
@@ -1868,7 +1942,8 @@ function ridisegna() {
   if (gh === null || ga === null) { var pt = punteggioAl(d.gol, 999); gh = pt.h; ga = pt.a; }
 
   el('tabellone').innerHTML =
-    '<div class="tabellone"><div class="squadra casa">' + esc(casa) + '</div><div class="punteggio">' + gh + ' : ' + ga + '</div><div class="squadra ospite">' + esc(ospite) + '</div></div>'
+    (S.elencoPronto ? '<div class="riga" style="margin-bottom:16px"><button type="button" data-azione="indietro">Torna all\'elenco</button></div>' : '')
+    + '<div class="tabellone"><div class="squadra casa">' + esc(casa) + '</div><div class="punteggio">' + gh + ' : ' + ga + '</div><div class="squadra ospite">' + esc(ospite) + '</div></div>'
     + '<div class="sotto-tabellone"><span>' + esc(ev ? (((ev.tournament && ev.tournament.name) || '') + ', ' + dove.etichetta) : 'Leggo la partita ' + P.id + '…') + '</span>'
     + '<span>id ' + esc(P.id) + '</span></div>'
     + '<p class="tenue piccolo" style="margin:10px 0 0; max-width:none">' + (dove.stato === 'attesa' ? 'I dati della diretta arrivano al calcio d\'inizio: controllo la scheda una volta al minuto.' : 'Dati letti: ' + esc(rigaDati(P))) + '</p>'
@@ -2118,8 +2193,8 @@ async function raccogli() {
   S.spento = false;
   el('btnRaccogli').disabled = true; el('btnCoda').disabled = true; el('btnFerma').hidden = false;
   raccoltaRiga('Leggo le partite del ' + data + '…');
-  var r = await partiteDelGiorno(data, 15, function (i, n) {
-    raccoltaRiga('SofaScore dà le partite nazione per nazione: leggo la ' + i + ' di ' + n + '…');
+  var r = await partiteDelGiorno(data, 30, function (i, n) {
+    raccoltaRiga('SofaScore dà le partite torneo per torneo: leggo il ' + i + ' di ' + n + '…');
   });
   if (r.s !== 200) { fineRaccolta(erroreGiorno(r.s)); return; }
   if (R.ferma) { fineRaccolta('Raccolta fermata.'); return; }
@@ -2177,6 +2252,7 @@ function diagnostica() {
   if (S.verifica) out.storico = { partite: S.verifica.partite, minuti: S.verifica.minuti, base: S.verifica.base, fasce: S.verifica.fasce, o05: S.verifica.o05, o25: S.verifica.o25, segnali: S.verifica.segnali, xg: S.verifica.xg };
   out.raccolta = el('raccoltaRiga').textContent || null;
   out.elencoGiorno = S.giornoInfo || null;
+  out.torneiConosciuti = torneiConosciuti().length;
   if (P) {
     var e = (P.dati.event && P.dati.event.event) || {};
     var g = (P.dati.graph && P.dati.graph.graphPoints) || [];
@@ -2251,6 +2327,15 @@ function avvio() {
   el('btnLive').addEventListener('click', mostraLive);
   el('btnOggi').addEventListener('click', mostraOggi);
   el('secPartita').addEventListener('click', function (e) {
+    var ind = e.target.closest ? e.target.closest('button[data-azione="indietro"]') : null;
+    if (ind) {
+      // torno all'elenco gia' letto, senza richieste; l'aggiornamento di questa partita si ferma finche' non la riapri
+      fermaLive();
+      el('secPartita').hidden = true;
+      el('elenco').hidden = false;
+      el('secScegli').scrollIntoView();
+      return;
+    }
     var b = e.target.closest ? e.target.closest('button[data-azione="pre"]') : null;
     var P = S.partita;
     if (!b || !P || !P.dati.event) return;
@@ -2275,6 +2360,8 @@ function avvio() {
     }, 0);
   });
   el('elenco').addEventListener('click', function (e) {
+    var ril = e.target.closest ? e.target.closest('button[data-azione="rileggi"]') : null;
+    if (ril) { mostraOggi(true); return; }
     var b = e.target.closest ? e.target.closest('button[data-id]') : null;
     if (b) { el('inId').value = b.getAttribute('data-id'); caricaPartita(b.getAttribute('data-id')); }
   });
