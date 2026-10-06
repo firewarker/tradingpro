@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.5.0</title>
+<title>Indice Gol 0.6.0</title>
 <style>
 :root{
   --bg:#0a1020; --pan:#121a2d; --pan2:#18223a; --bordo:#243152; --txt:#e8edf7; --txt2:#93a1bd;
@@ -73,6 +73,21 @@ input[type=text]{font:500 15px/1 var(--testo); color:var(--txt); background:var(
 .carta .grande{font-weight:800; font-size:44px; line-height:1; margin:8px 0 8px; letter-spacing:-.02em}
 .carta .esito{font-weight:800; font-size:24px; margin:10px 0 6px}
 .pill{display:inline-block; font-size:12.5px; font-weight:700; border-radius:999px; padding:4px 10px; background:var(--pan2); color:var(--txt)}
+.pill.forte{background:var(--ambra); color:#1a1200}
+.allerta.forte{border-color:var(--rosso); background:rgba(255,90,95,.12)}
+.allerta.forte .spia{background:var(--rosso); box-shadow:0 0 0 6px rgba(255,90,95,.25)}
+.gruppo{border-bottom:1px solid var(--bordo)}
+.gruppo summary{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 12px; font-weight:700; font-size:14.5px; list-style:none; cursor:pointer}
+.gruppo summary::-webkit-details-marker{display:none}
+.gruppo summary:hover, .gruppo[open] summary{background:var(--pan2)}
+.gruppo summary small{font-weight:500; color:var(--txt2); font-size:12.5px}
+.gruppo summary .conta{font-weight:600; font-size:12.5px; color:var(--txt2); white-space:nowrap}
+.elenco button.voce{display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; text-align:left; background:transparent; border:0; border-bottom:1px solid var(--bordo); border-radius:0; padding:11px 12px; font-weight:700; font-size:14.5px}
+.elenco button.voce:hover{background:var(--pan2)}
+.elenco button.voce .conta{font-weight:600; font-size:12.5px; color:var(--txt2); white-space:nowrap}
+.elenco .titoletto{padding:12px 12px 6px; font-size:12.5px; font-weight:700; color:var(--txt2)}
+.elenco .min{color:var(--verde); font-weight:700; margin-right:12px; font-size:13.5px}
+.elenco .orario{color:var(--txt2); font-weight:600; font-size:13.5px}
 .pill.ok{background:rgba(47,212,122,.16); color:var(--verde)} .pill.medio{background:rgba(255,176,32,.16); color:var(--ambra)} .pill.no{background:rgba(255,90,95,.14); color:var(--rosso)}
 .carta .rigast{display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--bordo)}
 .carta .rigast b{font-size:22px; font-weight:800}
@@ -248,14 +263,14 @@ textarea{width:100%; height:180px; font:12.5px/1.4 Menlo,Consolas,monospace; bac
     <textarea id="diagTesto" hidden readonly aria-label="Diagnostica"></textarea>
     <details style="margin-top:16px">
       <summary>Come è calcolato l'Indice Gol in questa versione</summary>
-      <p><b>Da dove vengono i numeri.</b> Il 6 ottobre 2026 ho misurato tutto sulle 103 partite vere del tuo storico. Tengo acceso solo quello che lì ha funzionato.</p>
-      <p><b>Cosa non ha funzionato.</b> La pressione e l'xG degli ultimi minuti, presi da soli, non anticipano il gol: con valori alti o bassi il gol entro 10 minuti arriva quasi con la stessa frequenza. Lo stesso per Apertura, Assedio e Onda. Per questo non guidano più le stime.</p>
-      <p><b>Allerta gol.</b> Si accende solo nei casi rari: almeno 7 tiri, oppure almeno 4 tiri in porta, oppure xG di almeno 1,0 negli ultimi 10 minuti. In quelle 103 partite, con l'allerta accesa il gol entro 10 minuti è arrivato nel 33% dei casi, senza nel 23%.</p>
-      <p><b>Tipo di partita.</b> Dai gol e dai tiri visti finora capisco se la partita è più ricca o più povera di gol della media, e sposto le stime di conseguenza. All'inizio conta poco, poi sempre di più.</p>
+      <p><b>Da dove vengono i numeri.</b> Il 6 ottobre 2026 ho misurato tutto sulle 202 partite vere del tuo storico. Tengo acceso solo quello che lì ha funzionato.</p>
+      <p><b>Cosa non ha funzionato.</b> Il momentum e l'xG degli ultimi minuti, presi da soli, non anticipano il gol: con valori alti o bassi il gol entro 10 minuti arriva quasi con la stessa frequenza. Lo stesso per Apertura, Assedio e Onda. Per questo non guidano le stime.</p>
+      <p><b>Allerta gol.</b> Conta quanto si tira. Si accende con almeno 7 tiri oppure 4 tiri in porta negli ultimi 10 minuti; diventa forte con 8 tiri oppure 5 in porta. Su 202 partite il gol entro 10 minuti è arrivato nel 24% dei casi senza allerta, nel 32% con l'allerta e nel 47% con l'allerta forte. La regola l'ho trovata sulle prime 103 partite e ha retto sulle 99 raccolte dopo.</p>
+      <p><b>Tipo di partita.</b> Dal numero di tiri visti finora capisco se la partita è più viva o più spenta della media, e sposto le stime di conseguenza. All'inizio conta poco, poi sempre di più. I gol già fatti non li uso: sui dati non aiutano.</p>
       <p><b>Gol nel primo tempo, Over 2.5, secondo tempo.</b> Conto i gol attesi da adesso all'intervallo o alla fine: ritmo normale di ogni minuto, per il tipo di partita, per la base della partita se hai scritto la quota pre-partita. Da lì la probabilità e la quota minima per entrare.</p>
       <p><b>Indice Gol.</b> È il ritmo gol di adesso su una scala dove 50 è il ritmo medio: sale con il tipo di partita e con l'allerta.</p>
-      <p><b>Pronostico pre-partita.</b> Dalle ultime 20 partite di ciascuna squadra ricavo quanti gol segna e subisce, dando più peso alle più recenti e alla stessa competizione. Da lì i gol attesi e le probabilità di 1, X, 2, Over 2.5, GG e Over 0.5 primo tempo. Se ci sono le quote, il mercato pesa il 70% e il mio modello il 30%. Il pronostico è la giocata più probabile fra quelle pagate almeno 1,30. Dico di entrare solo se probabilità per quota supera 1,03 e se il mio modello non è troppo lontano dal mercato.</p>
-      <p><b>Limite.</b> Le soglie sono state scelte guardando quelle stesse 103 partite, quindi i numeri sono un po' ottimisti. Le partite che raccogli da ora in poi diranno se reggono: le tabelle qui sopra si aggiornano da sole.</p>
+      <p><b>Pronostico pre-partita.</b> Dalle ultime 20 partite di ciascuna squadra ricavo quanti gol segna e subisce, dando più peso alle più recenti e alla stessa competizione. Da lì i gol attesi e le probabilità di 1, X, 2, Over 2.5, GG e Over 0.5 primo tempo. Se ci sono le quote, il mercato pesa il 70% e il mio modello il 30%. Il consiglio riguarda solo Over 2.5 e Over 0.5 primo tempo. Dico di entrare prima del via solo se probabilità per quota supera 1,03, la quota è almeno 1,30 e il mio modello non è troppo lontano dal mercato; altrimenti rimando alla diretta.</p>
+      <p><b>Limite.</b> 202 partite sono ancora poche e vengono da pochi giorni e da molte leghe minori. Le partite che raccogli da ora in poi diranno se i numeri reggono: le tabelle qui sopra si aggiornano da sole.</p>
     </details>
   </section>
   </div>
@@ -264,7 +279,7 @@ textarea{width:100%; height:180px; font:12.5px/1.4 Menlo,Consolas,monospace; bac
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.5.0';
+var VERSIONE = '0.6.0';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -278,10 +293,11 @@ var PESI = {
   tau: 15,               // minuti in cui il ritmo di adesso torna a meta' strada verso la media
   recupero1: 2, recupero2: 4,   // minuti di recupero medi, se SofaScore non li dice
   divergenzaLive: 0.12,  // oltre questa distanza dalla quota live non mi fido della mia stima
-  // --- tarati sulle 103 partite vere dello storico del 6 ottobre 2026 ---
-  kTipo: 8, kTiri: 12, tiriMedi: 24, espTiri: 0.5, tipoMin: 0.6, tipoMax: 1.8,   // "tipo di partita" imparato da gol e tiri
-  allertaXg: 1.0, allertaTiri: 7, allertaInPorta: 4,    // soglie dell'allerta gol, sugli ultimi 10 minuti
-  allertaSpinta: 1.25, calmaSpinta: 0.95                // quanto cambia il ritmo gol con e senza allerta (misurato: 33% contro 23%)
+  // --- tarati sulle 202 partite vere dello storico del 6 ottobre 2026 ---
+  kTiri: 20, tiriMedi: 22, tipoMin: 0.6, tipoMax: 1.8,   // "tipo di partita" imparato dal numero di tiri
+  allertaTiri: 7, allertaInPorta: 4,                     // allerta: tiri o tiri in porta negli ultimi 10 minuti
+  forteTiri: 8, forteInPorta: 5,                         // allerta forte
+  spinte: [0.94, 1.13, 1.77]                             // ritmo gol senza allerta, con allerta, con allerta forte
 };
 
 function num(x) {
@@ -433,16 +449,16 @@ function spintaAl(graph, m) {
 function attesiFinora(orologio, tempo) {
   return Math.max(0, PESI.golMedi - golDaAdesso(orologio, tempo, 1, 1, true, PESI.recupero1, PESI.recupero2));
 }
-// Tipo di partita: sopra 1 = partita piu' ricca di gol della media, sotto 1 = piu' povera.
-// Lo imparo dai gol e dai tiri visti finora; all'inizio vale 1 e si sposta piano, per non farsi ingannare da pochi minuti.
+// Tipo di partita: sopra 1 = partita piu' viva della media, sotto 1 = piu' spenta.
+// Lo imparo dal numero di tiri visti finora rispetto a una partita media; all'inizio vale 1 e si sposta piano.
+// (Sulle 202 partite vere i tiri aiutano le stime; i gol gia' fatti no, quindi non li uso.)
 function tipoPartita(gol, tiri, attesi) {
-  var a = (PESI.kTipo + gol) / (PESI.kTipo + attesi);
-  var b = (PESI.kTiri + tiri) / (PESI.kTiri + PESI.tiriMedi * attesi / PESI.golMedi);
-  return clamp(a * Math.pow(b, PESI.espTiri), PESI.tipoMin, PESI.tipoMax);
+  return clamp((PESI.kTiri + tiri) / (PESI.kTiri + PESI.tiriMedi * attesi / PESI.golMedi), PESI.tipoMin, PESI.tipoMax);
 }
 function tiriFinoA(d, m) { var n = 0; for (var i = 0; i < d.tiri.length; i++) { if (d.tiri[i].t > m) break; n++; } return n; }
-// Allerta gol: negli ultimi 10 minuti e' successo qualcosa di raro (tanti tiri, tiri pesanti o tanti tiri in porta).
-// Sullo storico vero, con l'allerta accesa il gol entro 10 minuti e' arrivato nel 33% dei casi, senza nel 23%.
+// Allerta gol: negli ultimi 10 minuti si e' tirato moltissimo. E' l'unico segnale di breve periodo che regge sui dati veri.
+// Sulle 202 partite: gol entro 10 minuti nel 24% dei casi senza allerta, nel 32% con l'allerta, nel 47% con l'allerta forte.
+// (L'xG degli ultimi minuti, da solo, non aggiunge nulla: per questo non entra nella regola.)
 function allerta(d, m) {
   var x = 0, n = 0, porta = 0;
   for (var i = 0; i < d.tiri.length; i++) {
@@ -450,11 +466,11 @@ function allerta(d, m) {
     if (s.t > m) break;
     if (s.t > m - 10) { x += s.xg; n++; if (s.inPorta) porta++; }
   }
+  var livello = (n >= PESI.forteTiri || porta >= PESI.forteInPorta) ? 2 : (n >= PESI.allertaTiri || porta >= PESI.allertaInPorta) ? 1 : 0;
   var motivi = [];
   if (n >= PESI.allertaTiri) motivi.push(n + ' tiri negli ultimi 10 minuti');
   if (porta >= PESI.allertaInPorta) motivi.push(porta + ' tiri in porta negli ultimi 10 minuti');
-  if (x >= PESI.allertaXg) motivi.push('xG degli ultimi 10 minuti a ' + x.toFixed(2).replace('.', ','));
-  return { livello: motivi.length ? 1 : 0, motivi: motivi, xg: x, tiri: n, inPorta: porta };
+  return { livello: livello, motivi: motivi, xg: x, tiri: n, inPorta: porta };
 }
 // d = { graph:[], tiri:[], gol:[], rossi:[], fattore }
 function calcolaMinuto(d, m) {
@@ -492,7 +508,7 @@ function calcolaMinuto(d, m) {
   var al = allerta(d, m);
   // NORMA_GOL tiene conto che una parte dei gol arriva nei recuperi (e' gia' stata calcolata da attesiFinora qui sopra)
   var rif = PESI.golMedi / 90 * NORMA_GOL;
-  var tot = baseMinuto(m) * NORMA_GOL * F * tipo * (al.livello ? PESI.allertaSpinta : PESI.calmaSpinta);
+  var tot = baseMinuto(m) * NORMA_GOL * F * tipo * PESI.spinte[al.livello];
   return {
     m: m,
     indice: clamp(Math.round(50 * tot / rif), 0, 100),
@@ -792,7 +808,7 @@ function verificaStorico(recs) {
     var d = { graph: leggiGraph(r.graph), tiri: leggiTiri(r.shotmap), gol: ev.gol, rossi: ev.rossi };
     if (!d.graph.length && !d.tiri.length) return;
     var fin = punteggioAl(d.gol, 999), over25 = (fin.h + fin.a >= 3) ? 1 : 0;
-    var riga = { idx: vuote(FASCE.length), o05: vuote(LIM_O05.length - 1), o25: vuote(LIM_O25.length - 1), all: vuote(2), seg: { apertura: [], assedio: [], onda: [] } };
+    var riga = { idx: vuote(FASCE.length), o05: vuote(LIM_O05.length - 1), o25: vuote(LIM_O25.length - 1), all: vuote(3), seg: { apertura: [], assedio: [], onda: [] } };
     // 0-0 all'intervallo: cosa dice il Radar sul secondo tempo e cosa e' successo
     var golPrimo = 0, golSecondo = 0;
     d.gol.forEach(function (gg) { if (gg.t <= 45.5) golPrimo++; else golSecondo++; });
@@ -894,7 +910,7 @@ function verificaStorico(recs) {
     return out;
   });
   return { partite: NP, minuti: totN, base: totN ? totH / totN : null, fasce: fasce, o05: tabella('o05', LIM_O05), o25: tabella('o25', LIM_O25),
-    allerta: [riassumi('all', 0), riassumi('all', 1)], zeroZero: zeroZero, segnali: seg, xg: xg };
+    allerta: [riassumi('all', 0), riassumi('all', 1), riassumi('all', 2)], zeroZero: zeroZero, segnali: seg, xg: xg };
 }
 
 // Versioni leggere dei dati, per non riempire il disco.
@@ -945,9 +961,10 @@ var PRE = {
   pesoMercato: 0.7,       // quanto pesa il mercato rispetto al modello
   margine: 1.03,          // valore minimo per proporre l'entrata
   divergenzaMax: 0.12,    // oltre questa distanza dal mercato non mi fido del modello
-  divergenzaRel: 0.25,    // lo stesso, in proporzione: conta per le giocate poco probabili
+  divergenzaRel: 0.25,    // lo stesso, in proporzione: vale solo per le giocate poco probabili (sotto il 25%)
   quotaMinima: 1.30,      // sotto questa quota una giocata non vale il rischio
   probMinima: 0.35,       // sotto questa probabilita' non propongo mai di entrare
+  sogliaO25: 0.55, sogliaO05: 0.72,   // da qui in su una partita e' "da Over 2.5" o "da gol nel primo tempo"
   margineBook: 1.05       // margine tipico tolto a una quota scritta a mano senza le altre
 };
 var ESITI = ['1', 'X', '2', 'O25', 'GG', 'O05PT'];
@@ -1116,28 +1133,28 @@ function pronostico(modello, quoteSofa, quoteMano) {
       k: e, modello: pm, mercato: pk === undefined ? null : pk, mercatoStimato: !!M.stimate[e], p: p, quota: quota,
       aMano: !!(quoteMano && quoteMano[e]), valore: quota ? p * quota : null, quotaMin: PRE.margine / p, scarto: p / BASE_ESITI[e],
       // modello troppo lontano dal mercato, in punti o in proporzione: di solito sbaglia il modello
-      troppo: pk !== undefined && (Math.abs(pm - pk) > PRE.divergenzaMax || Math.abs(pm - pk) / pk > PRE.divergenzaRel),
+      troppo: pk !== undefined && (Math.abs(pm - pk) > PRE.divergenzaMax || (pk < 0.25 && Math.abs(pm - pk) / pk > PRE.divergenzaRel)),
       // giocabile = non pagata una miseria: quota almeno 1,30 (senza quota la stimo dalla probabilita' del mercato, tolto il margine)
       giocabile: quota ? quota >= PRE.quotaMinima : (1 / (pk !== undefined ? pk : p)) / PRE.margineBook >= PRE.quotaMinima
     };
   });
-  // Il pronostico e' la giocata piu' probabile fra quelle giocabili. Poi dico se a quella quota conviene.
-  // (prima fra quelle dove il modello non e' lontano dal mercato; se non ce ne sono, fra tutte le giocabili)
-  var scelta = null;
-  righe.forEach(function (r) { if (r.giocabile && !r.troppo && (!scelta || r.p > scelta.p)) scelta = r; });
-  if (!scelta) righe.forEach(function (r) { if (r.giocabile && (!scelta || r.p > scelta.p)) scelta = r; });
-  if (!scelta) righe.forEach(function (r) { if (!scelta || r.p > scelta.p) scelta = r; });
-  var modo;
-  if (scelta.valore === null) modo = 'senzaQuota';
-  else if (scelta.troppo) modo = 'diverge';
-  else modo = scelta.valore >= PRE.margine ? 'valore' : scelta.valore >= 0.97 ? 'pari' : 'no';
-  // Valore su un'altra giocata: solo se non e' un azzardo (probabilita' almeno 35%) e il modello non e' lontano dal mercato
-  var altra = null;
-  righe.forEach(function (r) {
-    if (r === scelta || r.valore === null || r.troppo || r.p < PRE.probMinima || r.valore < PRE.margine) return;
-    if (!altra || r.valore > altra.valore) altra = r;
+  // Per il trading contano due giocate: Over 2.5 e Over 0.5 primo tempo. Il consiglio riguarda solo quelle.
+  function perK(kk) { for (var i = 0; i < righe.length; i++) if (righe[i].k === kk) return righe[i]; return null; }
+  var o25 = perK('O25'), o05 = perK('O05PT'), scelta = null, modo;
+  [o25, o05].forEach(function (r) {      // 1) c'e' valore vero su una delle due?
+    if (r.valore !== null && r.valore >= PRE.margine && !r.troppo && r.giocabile && (!scelta || r.valore > scelta.valore)) scelta = r;
   });
-  return { righe: righe, scelta: scelta, modo: modo, altra: altra, golMercato: M.gol };
+  if (scelta) modo = 'valore';
+  else {
+    scelta = (o25.p >= PRE.sogliaO25) ? o25 : (o05.p >= PRE.sogliaO05) ? o05 : null;
+    if (scelta) {
+      if (scelta.troppo) modo = 'diverge';
+      else if (!scelta.giocabile) modo = 'basse';            // partita da gol, ma pagata troppo poco prima del via
+      else if (scelta.valore === null) modo = 'senzaQuota';
+      else modo = scelta.valore >= 0.97 ? 'pari' : 'no';
+    } else modo = (o25.p < 0.45 && o05.p < 0.68) ? 'nongol' : 'media';
+  }
+  return { righe: righe, scelta: scelta, modo: modo, altra: null, o25: o25, o05: o05, golMercato: M.gol };
 }
 // Com'e' andata davvero una giocata, a partita finita. null = non si puo' dire.
 function esitoReale(k, ev) {
@@ -1532,28 +1549,45 @@ function disegnaPre(P, ev, casa, ospite, finita) {
     box.innerHTML = '<p class="avviso" style="margin-top:0">' + esc(X.errore) + '</p><div class="riga" style="margin-top:12px"><button type="button" data-azione="pre">Riprova</button></div>';
     return;
   }
-  var nomi = nomiEsiti(casa, ospite), R = pronostico(X.modello, X.quoteSofa, X.mano), s = R.scelta;
-  var gioc = nomi[s.k][0] + ' (' + nomi[s.k][1] + ')', qmin = dec(s.quotaMin, 2), cls, titolo, sotto;
-  var testa = 'Pronostico: ' + gioc + ', ' + perc(s.p);
+  var nomi = nomiEsiti(casa, ospite), R = pronostico(X.modello, X.quoteSofa, X.mano), s = R.scelta, o25 = R.o25, o05 = R.o05;
+  var cls = '', titolo, sotto, live = ' In diretta, se non segnano subito, la quota sale: il riquadro della partita ti dice minuto per minuto la quota minima per entrare.';
+  function frase(r) { return nomi[r.k][0] + ' ' + parolaProb(r.p)[0].toLowerCase() + ' (' + perc(r.p) + ')'; }
   if (R.modo === 'valore') {
-    cls = 'ok'; titolo = testa + '. Entra a ' + dec(s.quota, 2);
-    sotto = 'Valore ' + segno((s.valore - 1) * 100) + '%. Se la quota scende sotto ' + qmin + ' non conviene più.';
+    cls = 'ok'; titolo = 'Da tradare: ' + nomi[s.k][0] + ', ' + perc(s.p) + '. A ' + dec(s.quota, 2) + ' c\'è valore';
+    sotto = 'Valore ' + segno((s.valore - 1) * 100) + '%. Sotto quota ' + dec(s.quotaMin, 2) + ' non conviene più.';
   } else if (R.modo === 'pari') {
-    cls = 'medio'; titolo = testa + '. Quota giusta, senza margine';
-    sotto = 'A ' + dec(s.quota, 2) + ' nel lungo periodo non guadagni e non perdi. Entra solo se sale a ' + qmin + ' o più.';
-  } else if (R.modo === 'diverge') {
-    cls = 'no'; titolo = testa + '. Qui non mi fido della mia stima';
-    sotto = 'Il mio modello dice ' + perc(s.modello) + ', il mercato ' + perc(s.mercato) + ': quando siamo così lontani di solito sbaglio io. Meglio non entrare.';
+    cls = 'medio'; titolo = frase(s) + '. A ' + dec(s.quota, 2) + ' la quota è giusta, senza margine';
+    sotto = 'Entra da ' + dec(s.quotaMin, 2) + ' in su.' + live;
   } else if (R.modo === 'no') {
-    cls = 'no'; titolo = testa + '. Pagata poco';
-    sotto = 'A ' + dec(s.quota, 2) + ' il valore è ' + segno((s.valore - 1) * 100) + '%: non conviene. Entra solo se la quota sale a ' + qmin + ' o più.';
+    cls = 'medio'; titolo = frase(s) + ', ma a ' + dec(s.quota, 2) + ' è pagata poco';
+    sotto = 'Prima del via non conviene (valore ' + segno((s.valore - 1) * 100) + '%). Quota minima ' + dec(s.quotaMin, 2) + '.' + live;
+  } else if (R.modo === 'basse') {
+    cls = 'medio'; titolo = s.quota ? 'Partita da gol, ma quote troppo basse prima del via' : 'Partita da gol: prima del via di solito è pagata poco';
+    sotto = 'Over 2.5 ' + perc(o25.p) + (o25.quota ? ' a ' + dec(o25.quota, 2) : '') + ', Over 0.5 primo tempo ' + perc(o05.p) + (o05.quota ? ' a ' + dec(o05.quota, 2) : '') + '. Per tradarla aspetta la diretta.' + live;
+  } else if (R.modo === 'senzaQuota') {
+    titolo = frase(s);
+    sotto = 'Entra solo da ' + dec(s.quotaMin, 2) + ' in su: scrivi la quota nella tabella e ti dico se conviene.';
+  } else if (R.modo === 'diverge') {
+    cls = 'no'; titolo = nomi[s.k][0] + ': qui non mi fido della mia stima';
+    sotto = 'Il mio modello dice ' + perc(s.modello) + ', il mercato ' + perc(s.mercato) + ': quando siamo così lontani di solito sbaglio io. Meglio non entrare prima del via.';
+  } else if (R.modo === 'nongol') {
+    cls = 'no'; titolo = 'Non è una partita da Over';
+    sotto = frase(o25) + ', ' + frase(o05) + '. Per il tuo trading meglio lasciarla.';
   } else {
-    cls = ''; titolo = testa;
-    sotto = 'Entra solo a quota ' + qmin + ' o più. Scrivi la quota nella tabella e ti dico se conviene.';
+    titolo = 'Partita nella media: niente di chiaro prima del via';
+    sotto = frase(o25) + ', ' + frase(o05) + '. Nessuna delle due è abbastanza probabile da entrarci adesso; in diretta decide il riquadro della partita.';
   }
-  if (R.altra) sotto += ' Valore anche su ' + nomi[R.altra.k][0] + ' a ' + dec(R.altra.quota, 2) + ' (' + segno((R.altra.valore - 1) * 100) + '%, probabilità ' + perc(R.altra.p) + ').';
   var h = '<div class="scelta ' + cls + '"><div class="titolo">' + esc(titolo) + '</div><div class="sotto">' + esc(sotto) + '</div></div>';
+  function cartaPre(r) {
+    var w = parolaProb(r.p);
+    return '<div class="carta"><div class="nome">' + esc(nomi[r.k][0]) + '</div><div class="grande">' + perc(r.p) + '</div><span class="pill ' + w[1] + '">' + w[0] + '</span>'
+      + '<p class="tenue piccolo" style="margin:8px 0 0">Quota minima per entrare: <b style="color:var(--txt)">' + dec(r.quotaMin, 2) + '</b>.'
+      + (r.quota ? ' Quota offerta ' + dec(r.quota, 2) + ': valore ' + segno((r.valore - 1) * 100) + '%.' : ' Quota offerta: scrivila nella tabella.') + '</p></div>';
+  }
+  h += '<div class="adesso" style="grid-template-columns:1fr 1fr; margin-bottom:14px">' + cartaPre(o25) + cartaPre(o05) + '</div>';
   h += '<div class="scorri"><table class="larga"><thead><tr><th>Giocata</th><th>Probabilità</th><th>Mio modello</th><th>Mercato</th><th>Quota minima</th><th>Quota offerta</th><th>Valore</th>' + (finita ? '<th>Com\'è finita</th>' : '') + '</tr></thead><tbody>';
+  var ordine = ['O25', 'O05PT', '1', 'X', '2', 'GG'];
+  R.righe.sort(function (a, b) { return ordine.indexOf(a.k) - ordine.indexOf(b.k); });
   var stim = false, lontano = false;
   R.righe.forEach(function (r) {
     if (r.mercatoStimato) stim = true;
@@ -1578,7 +1612,7 @@ function disegnaPre(P, ev, casa, ospite, finita) {
     : 'Quote non lette da SofaScore (' + (X.stati.quote === 0 ? 'nessuna risposta' : 'errore ' + X.stati.quote) + '): scrivile tu.');
   if (stim) note.push('* Mercato stimato: per l\'Over 0.5 primo tempo lo ricavo dai gol attesi del mercato; per una quota scritta da sola tolgo un margine del 5%.');
   if (lontano) note.push('! Qui il mio modello è troppo lontano dal mercato: su quella giocata non propongo l\'entrata, perché di solito in questi casi sbaglia il modello.');
-  note.push('Il pronostico è la giocata più probabile fra quelle pagate almeno ' + dec(PRE.quotaMinima, 2) + '. Il modello guarda solo i risultati recenti: non conosce la forza degli avversari affrontati, le assenze e le formazioni.');
+  note.push('Il consiglio riguarda solo Over 2.5 e Over 0.5 primo tempo, le due giocate da trading; le altre righe sono per informazione. Il modello guarda solo i risultati recenti: non conosce la forza degli avversari affrontati, le assenze e le formazioni.');
   h += '<p class="tenue piccolo" style="margin-top:10px; max-width:none">' + note.join(' ') + '</p>';
   box.innerHTML = h;
 }
@@ -1590,7 +1624,7 @@ function salvaPronostico(P) {
     return st.put({
       id: P.id, quando: Date.now(), versione: VERSIONE, inizio: num(ev.startTimestamp),
       casa: (ev.homeTeam && ev.homeTeam.name) || '', ospite: (ev.awayTeam && ev.awayTeam.name) || '', torneo: (ev.tournament && ev.tournament.name) || '',
-      golCasa: X.modello.lH, golOspite: X.modello.lA, scelta: R.scelta.k, modo: R.modo,
+      golCasa: X.modello.lH, golOspite: X.modello.lA, scelta: R.scelta ? R.scelta.k : null, modo: R.modo,
       righe: R.righe.map(function (r) { return { k: r.k, p: r.p, modello: r.modello, mercato: r.mercato, quota: r.quota, aMano: r.aMano, valore: r.valore }; })
     });
   }).then(contaStorico);
@@ -1627,6 +1661,57 @@ async function passoLive() {
   }
 }
 
+// ---------- elenchi delle partite: prima il campionato, dentro le partite ----------
+function oraInizio(e) {
+  var q = num(e && e.startTimestamp);
+  if (q === null) return '';
+  var d = new Date(q * 1000);
+  return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+// Minuto di gioco di una partita in elenco.
+function minutoElenco(e) {
+  var st = (e && e.status) || {}, tipo = st.type, desc = String(st.description || '');
+  if (tipo !== 'inprogress') return '';
+  if (/half\s?time|break|pause/i.test(desc)) return 'Intervallo';
+  if (num(e.time && e.time.currentPeriodStartTimestamp) !== null) return minutoOra(e, { graph: [], tiri: [], gol: [] }, Date.now()).etichetta;
+  return desc || 'In corso';
+}
+function rigaPartita(e) {
+  var tipo = e.status && e.status.type, destra;
+  var gh = num(e.homeScore && e.homeScore.current), ga = num(e.awayScore && e.awayScore.current);
+  var ris = (gh === null || ga === null) ? '' : gh + ' : ' + ga;
+  if (tipo === 'inprogress') destra = '<span class="min">' + esc(minutoElenco(e)) + '</span>' + ris;
+  else if (tipo === 'finished') destra = '<span class="orario">finita</span> ' + ris;
+  else if (tipo === 'notstarted') destra = '<span class="orario">' + esc(oraInizio(e)) + '</span>';
+  else destra = '<span class="orario">' + esc((e.status && e.status.description) || '') + '</span>';
+  return '<button type="button" data-id="' + esc(e.id) + '"><span>' + esc((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + esc((e.awayTeam && e.awayTeam.name) || '?')
+    + (e.hasXg ? '<span class="etichetta-xg">xG</span>' : '') + '</span><span class="ris">' + destra + '</span></button>';
+}
+function chiaveTorneo(e) {
+  var t = (e && e.tournament) || {}, u = t.uniqueTournament || {};
+  return (u.id !== undefined && u.id !== null) ? 'u' + u.id : 'n' + (t.name || '?');
+}
+function nomeGruppo(e) {
+  var t = (e && e.tournament) || {}, u = t.uniqueTournament || {}, cat = (t.category && t.category.name) || '';
+  return { nazione: cat, nome: u.name || t.name || 'Torneo', seguito: num(u.userCount) || 0 };
+}
+// Raggruppa le partite per campionato: un riquadro che si apre per ogni campionato, dentro tutte le sue partite.
+function gruppiHtml(evs, aperti) {
+  var mappa = {}, ordine = [];
+  evs.forEach(function (e) {
+    var k = chiaveTorneo(e);
+    if (!mappa[k]) { var g = nomeGruppo(e); mappa[k] = { nazione: g.nazione, nome: g.nome, seguito: g.seguito, xg: false, evs: [] }; ordine.push(k); }
+    mappa[k].evs.push(e);
+    if (e.hasXg) mappa[k].xg = true;
+  });
+  ordine.sort(function (a, b) { return ((mappa[b].xg ? 1e9 : 0) + mappa[b].seguito) - ((mappa[a].xg ? 1e9 : 0) + mappa[a].seguito); });
+  return ordine.map(function (k) {
+    var g = mappa[k];
+    g.evs.sort(function (a, b) { return (num(a.startTimestamp) || 0) - (num(b.startTimestamp) || 0); });
+    return '<details class="gruppo"' + (aperti ? ' open' : '') + '><summary><span>' + esc(g.nome) + (g.nazione ? ' <small>' + esc(g.nazione) + '</small>' : '') + '</span><span class="conta">'
+      + g.evs.length + (g.evs.length === 1 ? ' partita' : ' partite') + '</span></summary>' + g.evs.map(rigaPartita).join('') + '</details>';
+  }).join('');
+}
 async function mostraLive() {
   if (!S.ponteOk) {
     avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
@@ -1645,43 +1730,41 @@ async function mostraLive() {
   var evs = r.j.events.slice();
   accoda(evs);
   imparaTornei(evs);
-  function peso(e) {
-    var u = e && e.tournament && e.tournament.uniqueTournament;
-    return (e && e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
-  }
-  evs.sort(function (a, b) { return peso(b) - peso(a); });
   if (!evs.length) { box.innerHTML = '<p class="tenue" style="padding:10px 0">In questo momento non ci sono partite in corso.</p>'; return; }
-  var h = '';
-  evs.slice(0, 80).forEach(function (e) {
-    var t = e.tournament || {}, cat = t.category || {};
-    h += '<button type="button" data-id="' + esc(e.id) + '">'
-      + '<span class="torneo">' + esc(cat.name ? cat.name + ', ' : '') + esc(t.name) + ', ' + esc((e.status && e.status.description) || '')
-      + (e.hasXg ? '<span class="etichetta-xg">xG</span>' : '') + '</span>'
-      + '<span>' + esc((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + esc((e.awayTeam && e.awayTeam.name) || '?') + '</span>'
-      + '<span class="ris">' + esc(num(e.homeScore && e.homeScore.current) === null ? '-' : e.homeScore.current) + ' : '
-      + esc(num(e.awayScore && e.awayScore.current) === null ? '-' : e.awayScore.current) + '</span>'
-      + '</button>';
-  });
-  if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', con prima quelle che hanno l\'xG.</p>';
-  box.innerHTML = h;
+  var campionati = {};
+  evs.forEach(function (e) { campionati[chiaveTorneo(e)] = true; });
+  box.innerHTML = '<p class="tenue piccolo" style="padding:10px 0; margin:0">' + evs.length + ' partite in corso in ' + Object.keys(campionati).length + ' campionati, lette alle ' + ora(Date.now()).slice(0, 5)
+    + '. Clicca un campionato per vedere le sue partite, con minuto e punteggio.</p>' + gruppiHtml(evs, false);
   S.elencoPronto = true;
 }
 
 // Tornei principali con il loro numero SofaScore, presi da una risposta vera del sito, dal piu' seguito al meno seguito.
 var TORNEI_NOTI = [[16, 1955859], [17, 1245207], [7, 1158557], [8, 885931], [1, 667586], [23, 661845], [35, 537132], [357, 524577], [34, 447772], [679, 434346],
   [10783, 318715], [17015, 229245], [11, 201718], [19, 182434], [329, 174419], [37, 160979], [27, 135108], [465, 109005], [328, 105567], [341, 43586], [53, 37090]];
+var NOMI_TORNEI = { 16: 'FIFA World Cup', 17: 'Premier League', 7: 'UEFA Champions League', 8: 'LaLiga', 1: 'EURO', 23: 'Serie A', 35: 'Bundesliga', 357: 'FIFA Club World Cup', 34: 'Ligue 1',
+  679: 'UEFA Europa League', 10783: 'UEFA Nations League', 17015: 'UEFA Conference League', 11: 'World Cup Qual. UEFA', 19: 'FA Cup', 329: 'Copa del Rey', 37: 'Eredivisie',
+  27: 'EURO, Qualification', 465: 'UEFA Super Cup', 328: 'Coppa Italia', 341: 'Supercoppa Italiana', 53: 'Serie B' };
+function nomiAppresi() { try { return JSON.parse(localStorage.getItem('ig-tornei-nomi') || '{}') || {}; } catch (e) { return {}; } }
+function nomeTorneo(id) { return NOMI_TORNEI[id] || nomiAppresi()[id] || null; }
 // Ogni elenco di partite in corso mi insegna altri tornei: li ricordo su questo computer.
 function torneiAppresi() {
   try { return JSON.parse(localStorage.getItem('ig-tornei') || '{}') || {}; } catch (e) { return {}; }
 }
 function imparaTornei(evs) {
-  var m = torneiAppresi(), nuovo = false;
+  var m = torneiAppresi(), nuovo = false, nomi = nomiAppresi(), nuoviNomi = false;
   (evs || []).forEach(function (e) {
     var u = e && e.tournament && e.tournament.uniqueTournament;
     if (!u || u.id === undefined || u.id === null) return;
     var seg = num(u.userCount) || 0;
     if (m[u.id] === undefined || m[u.id] < seg) { m[u.id] = seg; nuovo = true; }
+    var cat = e.tournament.category && e.tournament.category.name, nm = u.name || e.tournament.name;
+    if (nm && !NOMI_TORNEI[u.id] && !nomi[u.id]) { nomi[u.id] = (cat ? cat + ', ' : '') + nm; nuoviNomi = true; }
   });
+  if (nuoviNomi) {
+    var cn = Object.keys(nomi);
+    if (cn.length > 600) cn.slice(0, cn.length - 600).forEach(function (k) { delete nomi[k]; });
+    try { localStorage.setItem('ig-tornei-nomi', JSON.stringify(nomi)); } catch (e2) {}
+  }
   if (!nuovo) return;
   var ch = Object.keys(m);
   if (ch.length > 250) { ch.sort(function (a, b) { return m[b] - m[a]; }); ch.slice(250).forEach(function (k) { delete m[k]; }); }
@@ -1758,6 +1841,46 @@ function erroreGiorno(s) {
   return 'Non sono riuscito a leggere le partite di quel giorno (' + (s === 0 ? 'nessuna risposta' : 'errore ' + s) + ').';
 }
 
+function giornoOggi() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+// Partite di un campionato in un giorno (in memoria per 20 minuti).
+async function torneoDelGiorno(id, data, rileggi) {
+  var k = data + ':' + id, c = S.giorni[k];
+  if (!rileggi && c && Date.now() - c.quando < 20 * 60000) return { s: 200, events: c.events };
+  var r = await chiedi('/api/v1/unique-tournament/' + id + '/scheduled-events/' + data);
+  if (r.s === 200 && r.j && Array.isArray(r.j.events)) {
+    S.giorni[k] = { events: r.j.events, quando: Date.now() };
+    imparaTornei(r.j.events);
+    return { s: 200, events: r.j.events };
+  }
+  if (r.s === 404) { S.giorni[k] = { events: [], quando: Date.now() }; return { s: 200, events: [] }; }
+  return { s: r.s, events: [] };
+}
+// Nazioni e campionati che giocano oggi (una sola richiesta, in memoria per 20 minuti).
+async function nazioniDelGiorno(data, rileggi) {
+  var c = S.oggi;
+  if (!rileggi && c && c.data === data && Date.now() - c.quando < 20 * 60000) return c;
+  var scarto = -new Date().getTimezoneOffset() * 60;
+  var r = await chiedi('/api/v1/sport/football/' + data + '/' + scarto + '/categories');
+  var out = { data: data, quando: Date.now(), s: r.s, nazioni: [], tornei: {} };
+  if (r.s === 200 && r.j && Array.isArray(r.j.categories)) {
+    r.j.categories.forEach(function (x) {
+      var ids = Array.isArray(x && x.uniqueTournamentIds) ? x.uniqueTournamentIds : [];
+      if (!ids.length) return;
+      ids.forEach(function (t) { out.tornei[t] = true; });
+      out.nazioni.push({ id: x.category && x.category.id, nome: (x.category && x.category.name) || 'Nazione', n: num(x.totalEvents), peso: (num(x.totalEventPlayerStatistics) || 0) * 1000 + (num(x.totalEvents) || 0), tornei: ids });
+    });
+    out.nazioni.sort(function (a, b) { return b.peso - a.peso; });
+  }
+  S.oggi = out;
+  return out;
+}
+function elencoErrore(box, s) {
+  box.innerHTML = '<p class="tenue" style="padding:10px 0">Non sono riuscito a leggere le partite di oggi (' + (s === 0 ? 'nessuna risposta' : 'errore ' + esc(s)) + '). Puoi sempre incollare l\'indirizzo di una partita nel campo in alto.</p>';
+}
+// Primo livello: i campionati principali che giocano oggi, poi tutte le nazioni.
 async function mostraOggi(rileggi) {
   if (!S.ponteOk) {
     avviso('Prima collega SofaScore: apri www.sofascore.com e clicca il segnalibro «Ponte Indice Gol».');
@@ -1765,35 +1888,51 @@ async function mostraOggi(rileggi) {
     return;
   }
   S.spento = false;
-  var box = el('elenco'), d = new Date();
-  var giorno = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  var box = el('elenco'), data = giornoOggi();
   box.hidden = false;
-  box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo le partite di oggi…</p>';
-  var r = await partiteDelGiorno(giorno, 25, function (i, n) {
-    box.innerHTML = '<p class="tenue" style="padding:10px 0">SofaScore dà le partite torneo per torneo: leggo il ' + i + ' di ' + n + '. Serve circa un minuto, poi l\'elenco resta in memoria.</p>';
-  }, rileggi === true);
-  if (r.s !== 200) {
-    box.innerHTML = '<p class="tenue" style="padding:10px 0">' + esc(erroreGiorno(r.s)) + '</p>';
-    return;
+  box.innerHTML = '<p class="tenue" style="padding:10px 0">Leggo i campionati di oggi…</p>';
+  var G = await nazioniDelGiorno(data, rileggi === true);
+  var testa = '<div class="riga" style="padding:10px 0; justify-content:space-between"><span class="tenue piccolo">Campionati di oggi, letti alle ' + ora(G.quando).slice(0, 5) + '.</span><button type="button" data-azione="rileggi">Rileggi</button></div>';
+  var h = testa, noti = [], m = torneiAppresi();
+  TORNEI_NOTI.forEach(function (t) { if (m[t[0]] === undefined || m[t[0]] < t[1]) m[t[0]] = t[1]; });
+  if (G.nazioni.length) {
+    Object.keys(G.tornei).forEach(function (id) { var nm = nomeTorneo(id); if (nm) noti.push({ id: id, nome: nm, seg: m[id] || 0 }); });
+  } else if (G.s !== 200 && G.s !== 404) { elencoErrore(box, G.s); return; }
+  else {
+    // SofaScore non da' l'elenco del giorno: propongo i campionati che conosco, senza sapere quali giocano oggi
+    Object.keys(m).forEach(function (id) { var nm = nomeTorneo(id); if (nm) noti.push({ id: id, nome: nm, seg: m[id] || 0 }); });
+    h += '<p class="tenue piccolo" style="padding:0 0 8px">SofaScore non mi dà l\'elenco dei campionati di oggi: ti mostro quelli che conosco. Alcuni oggi non giocano.</p>';
   }
-  var evs = r.events.filter(function (e) { return e && e.id && e.status && e.status.type === 'notstarted'; });
-  function peso(e) {
-    var u = e.tournament && e.tournament.uniqueTournament;
-    return (e.hasXg ? 1e9 : 0) + (num(u && u.userCount) || 0);
+  noti.sort(function (a, b) { return b.seg - a.seg; });
+  if (noti.length) {
+    h += '<div class="titoletto">Campionati principali' + (G.nazioni.length ? ' che giocano oggi' : '') + '</div>'
+      + noti.slice(0, 40).map(function (t) { return '<button type="button" class="voce" data-torneo="' + esc(t.id) + '"><span>' + esc(t.nome) + '</span><span class="conta">apri</span></button>'; }).join('');
   }
-  evs.sort(function (a, b) { return peso(b) - peso(a); });
-  var testa = '<div class="riga" style="padding:10px 0; justify-content:space-between"><span class="tenue piccolo">Elenco letto alle ' + ora(r.quando || Date.now()).slice(0, 5) + '.</span><button type="button" data-azione="rileggi" style="width:auto; border:1.5px solid var(--gesso); border-radius:3px; padding:8px 12px; display:inline-block">Rileggi l\'elenco</button></div>';
-  if (!evs.length) { box.innerHTML = testa + '<p class="tenue" style="padding:10px 0">Nei tornei che conosco oggi non ci sono altre partite da giocare.</p>'; S.elencoPronto = true; return; }
-  var h = testa;
-  evs.slice(0, 80).forEach(function (e) {
-    var t = e.tournament || {}, cat = t.category || {}, quando = num(e.startTimestamp), hh = '';
-    if (quando !== null) { var dd = new Date(quando * 1000); hh = ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2); }
-    h += '<button type="button" data-id="' + esc(e.id) + '">'
-      + '<span class="torneo">' + esc(cat.name ? cat.name + ', ' : '') + esc(t.name) + '</span>'
-      + '<span>' + esc((e.homeTeam && e.homeTeam.name) || '?') + ' – ' + esc((e.awayTeam && e.awayTeam.name) || '?') + '</span>'
-      + '<span class="ris">' + esc(hh) + '</span></button>';
-  });
-  if (evs.length > 80) h += '<p class="tenue piccolo" style="padding:8px 0">Mostro le prime 80 di ' + evs.length + ', dalle più seguite.</p>';
+  if (G.nazioni.length) {
+    h += '<div class="titoletto">Tutte le nazioni (' + G.nazioni.length + ')</div>'
+      + G.nazioni.map(function (z) {
+        return '<button type="button" class="voce" data-nazione="' + esc(z.id) + '"><span>' + esc(z.nome) + ' <small class="tenue" style="font-weight:500">' + z.tornei.length + (z.tornei.length === 1 ? ' campionato' : ' campionati') + '</small></span><span class="conta">'
+          + (z.n !== null ? z.n + (z.n === 1 ? ' partita' : ' partite') : 'apri') + '</span></button>';
+      }).join('');
+  }
+  if (!noti.length && !G.nazioni.length) h += '<p class="tenue" style="padding:10px 0">Non conosco ancora nessun campionato: premi «Mostra partite in corso» quando si gioca.</p>';
+  box.innerHTML = h;
+  S.elencoPronto = true;
+}
+// Secondo livello: le partite di oggi di uno o piu' campionati, ognuno nel suo riquadro.
+async function apriCampionati(ids, titolo) {
+  var box = el('elenco'), data = giornoOggi(), tutte = [], visti = {}, errore = null;
+  for (var i = 0; i < ids.length; i++) {
+    box.innerHTML = '<p class="tenue" style="padding:10px 0">' + esc(titolo) + ': leggo il campionato ' + (i + 1) + ' di ' + ids.length + '…</p>';
+    var r = await torneoDelGiorno(ids[i], data, false);
+    if (r.s !== 200) { errore = r.s; if (r.s === 403 || r.s === 429 || r.s === 0) break; continue; }
+    r.events.forEach(function (e) { if (e && e.id && !visti[e.id]) { visti[e.id] = true; tutte.push(e); } });
+  }
+  var h = '<div class="riga" style="padding:10px 0; justify-content:space-between"><button type="button" data-azione="livello1">Tutti i campionati</button><span class="tenue piccolo">' + esc(titolo) + ': '
+    + tutte.length + (tutte.length === 1 ? ' partita' : ' partite') + ' oggi.</span></div>';
+  if (errore !== null && !tutte.length) h += '<p class="tenue" style="padding:10px 0">Non sono riuscito a leggere le partite (' + (errore === 0 ? 'nessuna risposta' : 'errore ' + esc(errore)) + ').</p>';
+  else if (!tutte.length) h += '<p class="tenue" style="padding:10px 0">Oggi qui non ci sono partite.</p>';
+  else h += gruppiHtml(tutte, true);
   box.innerHTML = h;
   S.elencoPronto = true;
 }
@@ -1861,7 +2000,7 @@ function disegnaRadar(P, d, dove, ev, oraC) {
   if (viva && oraC) {
     var normale = 1 - Math.exp(-10 * baseMinuto(dove.eff) * NORMA_GOL * d.fattore);
     c1 += '<div class="grande">' + perc(oraC.p10) + '</div>'
-      + (oraC.allerta.livello ? '<span class="pill medio">Allerta gol</span>' : oraC.p10 > normale * 1.12 ? '<span class="pill ok">Sopra la media</span>' : oraC.p10 < normale * 0.9 ? '<span class="pill">Sotto la media</span>' : '<span class="pill">Nella norma</span>')
+      + (oraC.allerta.livello === 2 ? '<span class="pill forte">Allerta forte</span>' : oraC.allerta.livello ? '<span class="pill medio">Allerta gol</span>' : oraC.p10 > normale * 1.12 ? '<span class="pill ok">Sopra la media</span>' : oraC.p10 < normale * 0.9 ? '<span class="pill">Sotto la media</span>' : '<span class="pill">Nella norma</span>')
       + '<p class="tenue piccolo" style="margin:8px 0 0">In una partita media, a questo minuto: ' + perc(normale) + '. Indice Gol <b style="color:var(--txt)">' + oraC.indice + '</b> su 100, dove 50 è il ritmo medio.</p>'
       + '<p class="storia">' + esc(rigaStorico(oraC.indice)) + '</p>';
   } else c1 += '<p class="tenue piccolo" style="margin-top:10px">' + (dove.stato === 'finita' ? 'Partita finita.' : 'Niente da calcolare per ora.') + '</p>';
@@ -1890,25 +2029,26 @@ function disegnaRadar(P, d, dove, ev, oraC) {
     + carta('Over 2.5', R.o25, 'o25', R.o25.stato === 'aperta' ? (R.o25.servono === 1 ? 'Serve ancora 1 gol' : 'Servono ancora ' + R.o25.servono + ' gol') + '; attesi da qui alla fine: ' + dec(R.o25.attesi, 2) + '.' : '', 'La partita è finita con meno di 3 gol.')
     + c4 + '</div>';
   var FP = fattorePartita(P), fonte = FP.fonte === 'quota' ? 'dalla quota Over 2.5 che hai scritto' : FP.fonte === 'mercato' ? 'dalle quote lette nel pronostico pre-partita' : FP.fonte === 'modello' ? 'dal mio pronostico pre-partita, senza quote' : 'uguale per tutte le partite';
-  var tipoTxt = viva ? ' Tipo di partita finora: ' + dec(R.tipo, 2) + ' (1 è la media; lo ricavo da gol e tiri).' : '';
+  var tipoTxt = viva ? ' Tipo di partita finora: ' + dec(R.tipo, 2) + ' (1 è la media; lo ricavo dal numero di tiri).' : '';
   h += '<div class="basequota"><label for="q-base">Quota Over 2.5 prima del calcio d\'inizio (facoltativa: adatta i calcoli a questa partita)</label>'
     + '<input class="q" id="q-base" type="text" inputmode="decimal" data-k="base" value="' + (P.baseQuota ? dec(P.baseQuota, 2) : '') + '" placeholder="quota">'
     + '<p class="tenue piccolo" style="margin-top:8px; max-width:none">Base usata: ' + dec(FP.gol, 2) + ' gol attesi a partita, ' + fonte + '.' + tipoTxt + '</p></div>';
   box.innerHTML = h;
 }
 function disegnaAllerta(dove, oraC, note) {
-  var box = el('indiceOra'), V = S.verifica, fatti = '';
-  if (V && V.allerta && V.allerta[1].n >= 100 && V.allerta[1].freq !== null) {
-    fatti = ' Nel tuo storico, con l\'allerta accesa il gol entro 10 minuti è arrivato nel ' + perc(V.allerta[1].freq) + ' dei casi (' + migliaia(V.allerta[1].n) + ' minuti di ' + V.allerta[1].partite + ' partite); senza allerta nel ' + perc(V.allerta[0].freq) + '.';
-  } else fatti = ' Sulle 103 partite del 6 ottobre: gol entro 10 minuti nel 33% dei casi con l\'allerta accesa, nel 23% senza.';
+  var box = el('indiceOra'), V = S.verifica, liv = oraC.allerta.livello, fatti;
+  var noti = ['24%', '32%', '47%'];      // misurati sulle 202 partite del 6 ottobre 2026
+  if (V && V.allerta && V.allerta[2] && V.allerta[1].n + V.allerta[2].n >= 300 && V.allerta[liv].freq !== null && V.allerta[liv].n >= 100) {
+    fatti = ' Nel tuo storico, in questa situazione il gol entro 10 minuti è arrivato nel ' + perc(V.allerta[liv].freq) + ' dei casi (' + migliaia(V.allerta[liv].n) + ' minuti di ' + V.allerta[liv].partite + ' partite); senza allerta nel ' + perc(V.allerta[0].freq) + '.';
+  } else fatti = ' Su 202 partite vere: gol entro 10 minuti nel ' + noti[liv] + ' dei casi in questa situazione, nel ' + noti[0] + ' senza allerta.';
   var h;
   if (dove.stato !== 'live') {
     h = '<div class="allerta"><span class="spia"></span><div><div class="t">' + (dove.stato === 'finita' ? 'Partita finita' : dove.stato === 'intervallo' ? 'Intervallo' : 'Partita ferma') + '</div><div class="tenue piccolo">L\'allerta gol lavora solo a partita in corso.</div></div></div>';
-  } else if (oraC.allerta.livello) {
-    h = '<div class="allerta on"><span class="spia"></span><div><div class="t">Allerta gol</div><div class="piccolo">' + esc(oraC.allerta.motivi.join('; ')) + '.' + fatti + '</div></div></div>';
+  } else if (liv) {
+    h = '<div class="allerta on' + (liv === 2 ? ' forte' : '') + '"><span class="spia"></span><div><div class="t">' + (liv === 2 ? 'Allerta gol forte' : 'Allerta gol') + '</div><div class="piccolo">' + esc(oraC.allerta.motivi.join('; ')) + '.' + fatti + '</div></div></div>';
   } else {
-    h = '<div class="allerta"><span class="spia"></span><div><div class="t">Nessuna allerta</div><div class="tenue piccolo">Ultimi 10 minuti: ' + oraC.allerta.tiri + ' tiri, ' + oraC.allerta.inPorta + ' in porta, xG ' + dec(oraC.allerta.xg, 2)
-      + '. Si accende con almeno ' + PESI.allertaTiri + ' tiri, o ' + PESI.allertaInPorta + ' in porta, o xG ' + dec(PESI.allertaXg, 1) + '.</div></div></div>';
+    h = '<div class="allerta"><span class="spia"></span><div><div class="t">Nessuna allerta</div><div class="tenue piccolo">Ultimi 10 minuti: ' + oraC.allerta.tiri + ' tiri, ' + oraC.allerta.inPorta + ' in porta'
+      + '. Si accende con almeno ' + PESI.allertaTiri + ' tiri oppure ' + PESI.allertaInPorta + ' in porta; diventa forte con ' + PESI.forteTiri + ' tiri oppure ' + PESI.forteInPorta + ' in porta.</div></div></div>';
   }
   if (note.length) h += '<p class="tenue piccolo" style="margin:-4px 0 12px; max-width:none">' + esc(note.join(' ')) + '</p>';
   box.innerHTML = h;
@@ -2010,10 +2150,10 @@ function disegnaVerifica() {
   var V = S.verifica, box = el('verifica');
   if (!V || !V.partite) { box.innerHTML = '<p class="tenue">Lo storico non contiene ancora partite finite con momentum o tiri. Raccogli qualche giornata qui sotto.</p>'; return; }
   var h = '<p>' + V.partite + (V.partite === 1 ? ' partita finita' : ' partite finite') + ', ' + migliaia(V.minuti) + ' minuti osservati. In media un gol è arrivato entro 10 minuti nel <b>' + perc(V.base) + '</b> dei casi.</p>';
-  if (V.allerta && V.allerta[1].n) {
+  if (V.allerta) {
     var A0 = V.allerta[0], A1 = V.allerta[1];
     h += '<h3>Allerta gol</h3><div class="scorri"><table class="larga"><thead><tr><th>Allerta</th><th>Minuti osservati</th><th>Partite</th><th>Gol entro 10\' (reale)</th><th>Intervallo probabile</th><th>Stima del modello</th></tr></thead><tbody>'
-      + [['Spenta', A0], ['Accesa', A1]].map(function (x) {
+      + [['Spenta', A0], ['Accesa', A1], ['Forte', V.allerta[2]]].filter(function (x) { return !!x[1]; }).map(function (x) {
         var f = x[1];
         return '<tr><td><b>' + x[0] + '</b></td><td>' + migliaia(f.n) + '</td><td>' + f.partite + '</td><td>' + (f.freq === null ? '–' : '<b>' + perc(f.freq) + '</b>') + '</td><td>' + (f.lo === null ? '–' : perc(f.lo) + ' – ' + perc(f.hi)) + '</td><td>' + (f.stimato === null ? '–' : perc(f.stimato)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -2495,8 +2635,18 @@ function avvio() {
     }, 0);
   });
   el('elenco').addEventListener('click', function (e) {
-    var ril = e.target.closest ? e.target.closest('button[data-azione="rileggi"]') : null;
-    if (ril) { mostraOggi(true); return; }
+    var cl = function (sel) { return e.target.closest ? e.target.closest(sel) : null; };
+    if (cl('button[data-azione="rileggi"]')) { mostraOggi(true); return; }
+    if (cl('button[data-azione="livello1"]')) { mostraOggi(false); return; }
+    var bt = cl('button[data-torneo]');
+    if (bt) { apriCampionati([bt.getAttribute('data-torneo')], bt.textContent.replace(/apri$/, '').trim()); return; }
+    var bn = cl('button[data-nazione]');
+    if (bn && S.oggi) {
+      var idn = bn.getAttribute('data-nazione'), z = null;
+      S.oggi.nazioni.forEach(function (x) { if (String(x.id) === idn) z = x; });
+      if (z) apriCampionati(z.tornei, z.nome);
+      return;
+    }
     var b = e.target.closest ? e.target.closest('button[data-id]') : null;
     if (b) { el('inId').value = b.getAttribute('data-id'); caricaPartita(b.getAttribute('data-id')); }
   });
