@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Indice Gol 0.6.0</title>
+<title>Indice Gol 0.6.2</title>
 <style>
 :root{
   --bg:#0a1020; --pan:#121a2d; --pan2:#18223a; --bordo:#243152; --txt:#e8edf7; --txt2:#93a1bd;
@@ -263,14 +263,15 @@ textarea{width:100%; height:180px; font:12.5px/1.4 Menlo,Consolas,monospace; bac
     <textarea id="diagTesto" hidden readonly aria-label="Diagnostica"></textarea>
     <details style="margin-top:16px">
       <summary>Come è calcolato l'Indice Gol in questa versione</summary>
-      <p><b>Da dove vengono i numeri.</b> Il 6 ottobre 2026 ho misurato tutto sulle 202 partite vere del tuo storico. Tengo acceso solo quello che lì ha funzionato.</p>
+      <p><b>Da dove vengono i numeri.</b> Il 7 ottobre 2026 ho misurato tutto sulle 482 partite vere del tuo storico. Tengo acceso solo quello che lì ha funzionato.</p>
       <p><b>Cosa non ha funzionato.</b> Il momentum e l'xG degli ultimi minuti, presi da soli, non anticipano il gol: con valori alti o bassi il gol entro 10 minuti arriva quasi con la stessa frequenza. Lo stesso per Apertura, Assedio e Onda. Per questo non guidano le stime.</p>
-      <p><b>Allerta gol.</b> Conta quanto si tira. Si accende con almeno 7 tiri oppure 4 tiri in porta negli ultimi 10 minuti; diventa forte con 8 tiri oppure 5 in porta. Su 202 partite il gol entro 10 minuti è arrivato nel 24% dei casi senza allerta, nel 32% con l'allerta e nel 47% con l'allerta forte. La regola l'ho trovata sulle prime 103 partite e ha retto sulle 99 raccolte dopo.</p>
+      <p><b>Allerta gol.</b> Conta quanto si tira: si accende con almeno 7 tiri negli ultimi 10 minuti. Su 482 partite il gol entro 10 minuti è arrivato nel 26% dei casi senza allerta e nel 37% con l'allerta, quasi uguale nei due gruppi di partite raccolti in giorni diversi. Le altre condizioni provate (xG, tiri in porta, un livello «forte») non hanno retto sulle partite nuove e le ho tolte.</p>
+      <p><b>Quanto si può prevedere.</b> Poco: anche mettendo insieme tutti i fattori, la previsione del gol nei 10 minuti successivi è appena migliore del non sapere nulla. L'allerta sposta la probabilità di una decina di punti, non di più. Le stime su primo tempo e Over 2.5, invece, sono precise.</p>
       <p><b>Tipo di partita.</b> Dal numero di tiri visti finora capisco se la partita è più viva o più spenta della media, e sposto le stime di conseguenza. All'inizio conta poco, poi sempre di più. I gol già fatti non li uso: sui dati non aiutano.</p>
       <p><b>Gol nel primo tempo, Over 2.5, secondo tempo.</b> Conto i gol attesi da adesso all'intervallo o alla fine: ritmo normale di ogni minuto, per il tipo di partita, per la base della partita se hai scritto la quota pre-partita. Da lì la probabilità e la quota minima per entrare.</p>
       <p><b>Indice Gol.</b> È il ritmo gol di adesso su una scala dove 50 è il ritmo medio: sale con il tipo di partita e con l'allerta.</p>
       <p><b>Pronostico pre-partita.</b> Dalle ultime 20 partite di ciascuna squadra ricavo quanti gol segna e subisce, dando più peso alle più recenti e alla stessa competizione. Da lì i gol attesi e le probabilità di 1, X, 2, Over 2.5, GG e Over 0.5 primo tempo. Se ci sono le quote, il mercato pesa il 70% e il mio modello il 30%. Il consiglio riguarda solo Over 2.5 e Over 0.5 primo tempo. Dico di entrare prima del via solo se probabilità per quota supera 1,03, la quota è almeno 1,30 e il mio modello non è troppo lontano dal mercato; altrimenti rimando alla diretta.</p>
-      <p><b>Limite.</b> 202 partite sono ancora poche e vengono da pochi giorni e da molte leghe minori. Le partite che raccogli da ora in poi diranno se i numeri reggono: le tabelle qui sopra si aggiornano da sole.</p>
+      <p><b>Limite.</b> 482 partite bastano per le stime generali, non per giudicare un singolo campionato. Le partite che raccogli da ora in poi diranno se i numeri reggono: le tabelle qui sopra si aggiornano da sole.</p>
     </details>
   </section>
   </div>
@@ -279,7 +280,7 @@ textarea{width:100%; height:180px; font:12.5px/1.4 Menlo,Consolas,monospace; bac
 <script>
 'use strict';
 //<LOGICA>
-var VERSIONE = '0.6.0';
+var VERSIONE = '0.6.2';
 var PESI = {
   golMedi: 2.7,          // gol attesi a partita usati come base
   emivitaTiri: 10,       // minuti dopo cui un tiro vale la meta'
@@ -293,11 +294,10 @@ var PESI = {
   tau: 15,               // minuti in cui il ritmo di adesso torna a meta' strada verso la media
   recupero1: 2, recupero2: 4,   // minuti di recupero medi, se SofaScore non li dice
   divergenzaLive: 0.12,  // oltre questa distanza dalla quota live non mi fido della mia stima
-  // --- tarati sulle 202 partite vere dello storico del 6 ottobre 2026 ---
+  // --- tarati sulle 482 partite vere dello storico del 7 ottobre 2026 ---
   kTiri: 20, tiriMedi: 22, tipoMin: 0.6, tipoMax: 1.8,   // "tipo di partita" imparato dal numero di tiri
-  allertaTiri: 7, allertaInPorta: 4,                     // allerta: tiri o tiri in porta negli ultimi 10 minuti
-  forteTiri: 8, forteInPorta: 5,                         // allerta forte
-  spinte: [0.94, 1.13, 1.77]                             // ritmo gol senza allerta, con allerta, con allerta forte
+  allertaTiri: 7,                                        // allerta: tiri negli ultimi 10 minuti
+  spinte: [1.0, 1.35]                                    // ritmo gol senza allerta e con l'allerta
 };
 
 function num(x) {
@@ -344,7 +344,7 @@ function xgDaPosizione(s) {
   var dx = Math.max(x, 0.5) * 1.05, dy = (y - 50) * 0.68;
   var dist = Math.sqrt(dx * dx + dy * dy);
   var ang = Math.atan2(dy + 3.66, dx) - Math.atan2(dy - 3.66, dx);
-  var p = 1 / (1 + Math.exp(-(-1.6 + 1.9 * ang - 0.11 * dist)));
+  var p = 1 / (1 + Math.exp(-(-1.23 + 1.9 * ang - 0.11 * dist)));   // costante ritarata su 1.370 tiri veri senza xG
   var corpo = String(s.bodyPart || '').toLowerCase();
   if (corpo === 'head') p *= 0.65;
   if (sit === 'fast-break') p *= 1.15;
@@ -365,6 +365,8 @@ function leggiTiri(j) {
     }
     var tipo = String(s.shotType || '').toLowerCase();
     var sit = String(s.situation || '').toLowerCase();
+    // i rigori della serie finale e le autoreti non sono tiri della partita
+    if (sit === 'shootout' || sit === 'own-goal') continue;
     var xg = num(s.xg), stimato = false, fonte = 'sofascore';
     if (xg === null) {
       stimato = true;
@@ -456,9 +458,10 @@ function tipoPartita(gol, tiri, attesi) {
   return clamp((PESI.kTiri + tiri) / (PESI.kTiri + PESI.tiriMedi * attesi / PESI.golMedi), PESI.tipoMin, PESI.tipoMax);
 }
 function tiriFinoA(d, m) { var n = 0; for (var i = 0; i < d.tiri.length; i++) { if (d.tiri[i].t > m) break; n++; } return n; }
-// Allerta gol: negli ultimi 10 minuti si e' tirato moltissimo. E' l'unico segnale di breve periodo che regge sui dati veri.
-// Sulle 202 partite: gol entro 10 minuti nel 24% dei casi senza allerta, nel 32% con l'allerta, nel 47% con l'allerta forte.
-// (L'xG degli ultimi minuti, da solo, non aggiunge nulla: per questo non entra nella regola.)
+// Allerta gol: negli ultimi 10 minuti si e' tirato moltissimo (almeno 7 tiri). E' l'unico segnale di breve periodo che regge.
+// Su 482 partite vere: gol entro 10 minuti nel 26% dei casi senza allerta, nel 37% con l'allerta; uguale nei due gruppi
+// di partite (38% e 36%). Le altre condizioni provate non hanno retto e le ho tolte una alla volta:
+// l'xG degli ultimi minuti, il livello "forte", e per ultimo i 4 tiri in porta (29% sulle partite nuove, come senza allerta).
 function allerta(d, m) {
   var x = 0, n = 0, porta = 0;
   for (var i = 0; i < d.tiri.length; i++) {
@@ -466,11 +469,8 @@ function allerta(d, m) {
     if (s.t > m) break;
     if (s.t > m - 10) { x += s.xg; n++; if (s.inPorta) porta++; }
   }
-  var livello = (n >= PESI.forteTiri || porta >= PESI.forteInPorta) ? 2 : (n >= PESI.allertaTiri || porta >= PESI.allertaInPorta) ? 1 : 0;
-  var motivi = [];
-  if (n >= PESI.allertaTiri) motivi.push(n + ' tiri negli ultimi 10 minuti');
-  if (porta >= PESI.allertaInPorta) motivi.push(porta + ' tiri in porta negli ultimi 10 minuti');
-  return { livello: livello, motivi: motivi, xg: x, tiri: n, inPorta: porta };
+  var acceso = n >= PESI.allertaTiri;
+  return { livello: acceso ? 1 : 0, motivi: acceso ? [n + ' tiri negli ultimi 10 minuti'] : [], xg: x, tiri: n, inPorta: porta };
 }
 // d = { graph:[], tiri:[], gol:[], rossi:[], fattore }
 function calcolaMinuto(d, m) {
@@ -808,7 +808,7 @@ function verificaStorico(recs) {
     var d = { graph: leggiGraph(r.graph), tiri: leggiTiri(r.shotmap), gol: ev.gol, rossi: ev.rossi };
     if (!d.graph.length && !d.tiri.length) return;
     var fin = punteggioAl(d.gol, 999), over25 = (fin.h + fin.a >= 3) ? 1 : 0;
-    var riga = { idx: vuote(FASCE.length), o05: vuote(LIM_O05.length - 1), o25: vuote(LIM_O25.length - 1), all: vuote(3), seg: { apertura: [], assedio: [], onda: [] } };
+    var riga = { idx: vuote(FASCE.length), o05: vuote(LIM_O05.length - 1), o25: vuote(LIM_O25.length - 1), all: vuote(2), seg: { apertura: [], assedio: [], onda: [] } };
     // 0-0 all'intervallo: cosa dice il Radar sul secondo tempo e cosa e' successo
     var golPrimo = 0, golSecondo = 0;
     d.gol.forEach(function (gg) { if (gg.t <= 45.5) golPrimo++; else golSecondo++; });
@@ -910,7 +910,7 @@ function verificaStorico(recs) {
     return out;
   });
   return { partite: NP, minuti: totN, base: totN ? totH / totN : null, fasce: fasce, o05: tabella('o05', LIM_O05), o25: tabella('o25', LIM_O25),
-    allerta: [riassumi('all', 0), riassumi('all', 1), riassumi('all', 2)], zeroZero: zeroZero, segnali: seg, xg: xg };
+    allerta: [riassumi('all', 0), riassumi('all', 1)], zeroZero: zeroZero, segnali: seg, xg: xg };
 }
 
 // Versioni leggere dei dati, per non riempire il disco.
@@ -2000,7 +2000,7 @@ function disegnaRadar(P, d, dove, ev, oraC) {
   if (viva && oraC) {
     var normale = 1 - Math.exp(-10 * baseMinuto(dove.eff) * NORMA_GOL * d.fattore);
     c1 += '<div class="grande">' + perc(oraC.p10) + '</div>'
-      + (oraC.allerta.livello === 2 ? '<span class="pill forte">Allerta forte</span>' : oraC.allerta.livello ? '<span class="pill medio">Allerta gol</span>' : oraC.p10 > normale * 1.12 ? '<span class="pill ok">Sopra la media</span>' : oraC.p10 < normale * 0.9 ? '<span class="pill">Sotto la media</span>' : '<span class="pill">Nella norma</span>')
+      + (oraC.allerta.livello ? '<span class="pill forte">Allerta gol</span>' : oraC.p10 > normale * 1.12 ? '<span class="pill ok">Sopra la media</span>' : oraC.p10 < normale * 0.9 ? '<span class="pill">Sotto la media</span>' : '<span class="pill">Nella norma</span>')
       + '<p class="tenue piccolo" style="margin:8px 0 0">In una partita media, a questo minuto: ' + perc(normale) + '. Indice Gol <b style="color:var(--txt)">' + oraC.indice + '</b> su 100, dove 50 è il ritmo medio.</p>'
       + '<p class="storia">' + esc(rigaStorico(oraC.indice)) + '</p>';
   } else c1 += '<p class="tenue piccolo" style="margin-top:10px">' + (dove.stato === 'finita' ? 'Partita finita.' : 'Niente da calcolare per ora.') + '</p>';
@@ -2037,18 +2037,17 @@ function disegnaRadar(P, d, dove, ev, oraC) {
 }
 function disegnaAllerta(dove, oraC, note) {
   var box = el('indiceOra'), V = S.verifica, liv = oraC.allerta.livello, fatti;
-  var noti = ['24%', '32%', '47%'];      // misurati sulle 202 partite del 6 ottobre 2026
-  if (V && V.allerta && V.allerta[2] && V.allerta[1].n + V.allerta[2].n >= 300 && V.allerta[liv].freq !== null && V.allerta[liv].n >= 100) {
-    fatti = ' Nel tuo storico, in questa situazione il gol entro 10 minuti è arrivato nel ' + perc(V.allerta[liv].freq) + ' dei casi (' + migliaia(V.allerta[liv].n) + ' minuti di ' + V.allerta[liv].partite + ' partite); senza allerta nel ' + perc(V.allerta[0].freq) + '.';
-  } else fatti = ' Su 202 partite vere: gol entro 10 minuti nel ' + noti[liv] + ' dei casi in questa situazione, nel ' + noti[0] + ' senza allerta.';
+  if (V && V.allerta && V.allerta[1].n >= 300 && V.allerta[1].freq !== null) {
+    fatti = ' Nel tuo storico, con l\'allerta accesa il gol entro 10 minuti è arrivato nel ' + perc(V.allerta[1].freq) + ' dei casi (' + migliaia(V.allerta[1].n) + ' minuti di ' + V.allerta[1].partite + ' partite); senza allerta nel ' + perc(V.allerta[0].freq) + '.';
+  } else fatti = ' Su 482 partite vere: gol entro 10 minuti nel 37% dei casi con l\'allerta accesa, nel 26% senza.';
   var h;
   if (dove.stato !== 'live') {
     h = '<div class="allerta"><span class="spia"></span><div><div class="t">' + (dove.stato === 'finita' ? 'Partita finita' : dove.stato === 'intervallo' ? 'Intervallo' : 'Partita ferma') + '</div><div class="tenue piccolo">L\'allerta gol lavora solo a partita in corso.</div></div></div>';
   } else if (liv) {
-    h = '<div class="allerta on' + (liv === 2 ? ' forte' : '') + '"><span class="spia"></span><div><div class="t">' + (liv === 2 ? 'Allerta gol forte' : 'Allerta gol') + '</div><div class="piccolo">' + esc(oraC.allerta.motivi.join('; ')) + '.' + fatti + '</div></div></div>';
+    h = '<div class="allerta on"><span class="spia"></span><div><div class="t">Allerta gol</div><div class="piccolo">' + esc(oraC.allerta.motivi.join('; ')) + '.' + fatti + '</div></div></div>';
   } else {
     h = '<div class="allerta"><span class="spia"></span><div><div class="t">Nessuna allerta</div><div class="tenue piccolo">Ultimi 10 minuti: ' + oraC.allerta.tiri + ' tiri, ' + oraC.allerta.inPorta + ' in porta'
-      + '. Si accende con almeno ' + PESI.allertaTiri + ' tiri oppure ' + PESI.allertaInPorta + ' in porta; diventa forte con ' + PESI.forteTiri + ' tiri oppure ' + PESI.forteInPorta + ' in porta.</div></div></div>';
+      + '. Si accende con almeno ' + PESI.allertaTiri + ' tiri in 10 minuti.</div></div></div>';
   }
   if (note.length) h += '<p class="tenue piccolo" style="margin:-4px 0 12px; max-width:none">' + esc(note.join(' ')) + '</p>';
   box.innerHTML = h;
@@ -2153,7 +2152,7 @@ function disegnaVerifica() {
   if (V.allerta) {
     var A0 = V.allerta[0], A1 = V.allerta[1];
     h += '<h3>Allerta gol</h3><div class="scorri"><table class="larga"><thead><tr><th>Allerta</th><th>Minuti osservati</th><th>Partite</th><th>Gol entro 10\' (reale)</th><th>Intervallo probabile</th><th>Stima del modello</th></tr></thead><tbody>'
-      + [['Spenta', A0], ['Accesa', A1], ['Forte', V.allerta[2]]].filter(function (x) { return !!x[1]; }).map(function (x) {
+      + [['Spenta', A0], ['Accesa', A1]].map(function (x) {
         var f = x[1];
         return '<tr><td><b>' + x[0] + '</b></td><td>' + migliaia(f.n) + '</td><td>' + f.partite + '</td><td>' + (f.freq === null ? '–' : '<b>' + perc(f.freq) + '</b>') + '</td><td>' + (f.lo === null ? '–' : perc(f.lo) + ' – ' + perc(f.hi)) + '</td><td>' + (f.stimato === null ? '–' : perc(f.stimato)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
